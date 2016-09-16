@@ -11,22 +11,22 @@
 ;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 ;; See the License for the specific language governing permissions and limitations under the License.
 
-(ns com.capitalone.commander.recorder.config
+(ns com.capitalone.commander.indexer.config
   (:require [environ.core :refer [env]]))
 
 (set! *warn-on-reflection* true)
 
 (def defaults
-  {:recorder {:commands-topic     "commands"
+  {:indexer {:commands-topic     "commands"
               :commands-partition 0
               :events-topic       "events"
               :events-partition   0}})
 
 (def environ
-  {:recorder {:commands-topic        (:commands-topic env)
+  {:indexer  {:commands-topic        (:commands-topic env)
               :commands-partition    (:commands-partition env)
               :events-topic          (:events-topic env)
               :events-partition      (:events-partition env)
               :kafka-consumer-config {"bootstrap.servers" (:kafka-servers env)
-                                      "group.id"          (:recorder-group-id env)}}
+                                      "group.id"          (:indexer-group-id env)}}
    :database {:connection-uri (:database-uri env)}})

@@ -11,7 +11,7 @@
 ;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 ;; See the License for the specific language governing permissions and limitations under the License.
 
-(ns com.capitalone.commander.recorder.component.recorder
+(ns com.capitalone.commander.indexer.component.indexer
   (:require [clojure.core.async :as a]
             [com.stuartsierra.component :as component]
             [io.pedestal.log :as log]
@@ -78,9 +78,9 @@
            (log/error :msg "Error indexing event" :event event :exception e)))
        (recur)))))
 
-(defrecord Recorder [database kafka-consumer-config
-                     commands-topic commands-partition commands-ch
-                     events-topic  events-partition  events-ch]
+(defrecord Indexer [database kafka-consumer-config
+                    commands-topic commands-partition commands-ch
+                    events-topic  events-partition  events-ch]
   component/Lifecycle
   (start [this]
     (let [events-offset   (database/find-latest-events-offset database events-topic events-partition)
@@ -101,9 +101,9 @@
     (when commands-ch (a/close! commands-ch))
     this))
 
-(defn construct-recorder
+(defn construct-indexer
   [config]
-  (map->Recorder
+  (map->Indexer
    (select-keys config [:kafka-consumer-config
                         :commands-topic :commands-partition
                         :events-topic   :events-partition])))

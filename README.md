@@ -51,7 +51,7 @@ you would expect in terms of running tests, launching REPLs, packaging
 uberjars, etc.
 
 CMDR runs as two microservices
-(`com.capitalone.commander.recorder` and
+(`com.capitalone.commander.indexer` and
 `com.capitalone.commander.rest`) that coordinate via
 [Apache Kafka](http://kafka.apache.org/) and a JDBC-compliant database
 like [PostgreSQL](https://www.postgresql.org/).  In order to run the
@@ -235,9 +235,9 @@ $ lein do clean, uberjar
 You then run the application:
 
 ``` sh
-$ java -jar target/uberjar/cmdr-standalone.jar -m com.capitalone.commander.recorder
+$ java -jar target/uberjar/cmdr-standalone.jar -m com.capitalone.commander.indexer
 $ # OR
-$ java -jar target/uberjar/cmdr-standalone.jar -m com.capitalone.commander.recorder
+$ java -jar target/uberjar/cmdr-standalone.jar -m com.capitalone.commander.indexer
 ```
 
 ### Docker
@@ -254,7 +254,7 @@ $ docker build -t my-cmdr-build .
 You can then run either of the CMDR services via the built image:
 
 ``` sh
-$ docker run my-cmdr-build com.capitalone.commander.recorder
+$ docker run my-cmdr-build com.capitalone.commander.indexer
 $ # OR
 $ docker run my-cmdr-build com.capitalone.commander.rest
 ```

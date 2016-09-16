@@ -71,11 +71,11 @@
                                             [lein-auto "0.1.2"]]
                              :source-paths ["dev"]
                              :repl-options {:init-ns user}
-                             :env          {:database-uri      "jdbc:postgresql://localhost/commander?user=commander&password=commander"
-                                            :kafka-servers     "localhost:9092"
-                                            :recorder-group-id "dev-recorder"
-                                            :rest-group-id     "dev-rest"}}
-             :project/test  {:env {:database-uri      "jdbc:postgresql://localhost/commander?user=commander&password=commander"
-                                   :kafka-servers     "localhost:9092"
-                                   :recorder-group-id "dev-recorder"
-                                   :rest-group-id     "dev-rest"}}})
+                             :env          {:database-uri     "jdbc:postgresql://localhost/commander?user=commander&password=commander"
+                                            :kafka-servers    "localhost:9092"
+                                            :indexer-group-id "dev-indexer"
+                                            :rest-group-id    "dev-rest"}}
+             :project/test  {:env {:database-uri     "jdbc:postgresql://localhost/commander?user=commander&password=commander"
+                                   :kafka-servers    "localhost:9092"
+                                   :indexer-group-id "dev-indexer"
+                                   :rest-group-id    "dev-rest"}}})

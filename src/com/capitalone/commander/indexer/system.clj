@@ -11,23 +11,23 @@
 ;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 ;; See the License for the specific language governing permissions and limitations under the License.
 
-(ns com.capitalone.commander.recorder.system
+(ns com.capitalone.commander.indexer.system
   (:require [com.stuartsierra.component :as component]
             [meta-merge.core :refer [meta-merge]]
             [io.pedestal.log :as log]
             [com.capitalone.commander.database :refer [construct-jdbc-db]]
-            [com.capitalone.commander.recorder.component.recorder :refer [construct-recorder]]))
+            [com.capitalone.commander.indexer.component.indexer :refer [construct-indexer]]))
 
 (set! *warn-on-reflection* true)
 
 (def base-config
-  {:recorder {:kafka-consumer-config {"enable.auto.commit" false}}})
+  {:indexer {:kafka-consumer-config {"enable.auto.commit" false}}})
 
 (defn new-system [config]
   (let [config (meta-merge config base-config)]
     (log/info :msg "Creating system" :config config)
     (-> (component/system-map
          :database (construct-jdbc-db  (:database config))
-         :recorder (construct-recorder (:recorder config)))
+         :indexer (construct-indexer (:indexer config)))
         (component/system-using
-         {:recorder [:database]}))))
+         {:indexer [:database]}))))

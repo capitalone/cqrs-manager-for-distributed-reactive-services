@@ -25,8 +25,8 @@
             [com.capitalone.clojure.runtime :as runtime]
             [com.capitalone.commander.rest.config :as rest-config]
             [com.capitalone.commander.rest.system :as rest-system]
-            [com.capitalone.commander.recorder.config :as recorder-config]
-            [com.capitalone.commander.recorder.system :as recorder-system]
+            [com.capitalone.commander.indexer.config :as indexer-config]
+            [com.capitalone.commander.indexer.system :as indexer-system]
             [com.capitalone.commander.database :as database]
             [com.capitalone.commander.api :as api]))
 
@@ -44,17 +44,17 @@
               rest-config/environ
               dev-config))
 
-(def recorder-config
-  (meta-merge recorder-config/defaults
-              recorder-config/environ
+(def indexer-config
+  (meta-merge indexer-config/defaults
+              indexer-config/environ
               dev-config))
 
 (defn new-system []
   (component/system-using
    (merge (rest-system/new-system rest-config)
-          (recorder-system/new-system recorder-config))
-   {:recorder [:database]
-    :api      [:database]}))
+          (indexer-system/new-system indexer-config))
+   {:indexer [:database]
+    :api     [:database]}))
 
 (ns-unmap *ns* 'test)
 

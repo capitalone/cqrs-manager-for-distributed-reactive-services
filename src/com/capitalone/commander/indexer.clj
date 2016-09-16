@@ -11,12 +11,12 @@
 ;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 ;; See the License for the specific language governing permissions and limitations under the License.
 
-(ns com.capitalone.commander.recorder
+(ns com.capitalone.commander.indexer
   (:gen-class)
   (:require [meta-merge.core :refer [meta-merge]]
             [io.pedestal.log :as log]
-            [com.capitalone.commander.recorder.config :as config]
-            [com.capitalone.commander.recorder.system :as system]
+            [com.capitalone.commander.indexer.config :as config]
+            [com.capitalone.commander.indexer.system :as system]
             [com.capitalone.commander.util :as util]))
 
 (set! *warn-on-reflection* true)
@@ -32,6 +32,6 @@
 (defn -main
   [& args]
   (let [system (system/new-system config)]
-    (log/info ::-main "Starting command and result recorder")
+    (log/info ::-main "Starting command and result indexer")
     (log/debug ::config config)
     (util/run-system! system)))

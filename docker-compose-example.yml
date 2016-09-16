@@ -34,14 +34,14 @@ services:
       - "./data/postgres:/var/lib/postgresql/data"
     ports:
       - "5432:5432"
-  recorder:
+  indexer:
     build:
       context: .
-    command: com.capitalone.commander.recorder
+    command: com.capitalone.commander.indexer
     environment:
       DATABASE_URI: jdbc:postgresql://database/commander
       KAFKA_SERVERS: kafka:9092
-      RECORDER_GROUP_ID: dev-recorder
+      INDEXER_GROUP_ID: dev-indexer
     links:
       - database
       - kafka
