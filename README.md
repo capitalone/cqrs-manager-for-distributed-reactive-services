@@ -25,7 +25,7 @@ demonstrate the
 [architecture](./architecture.png) described in the linked talks, and
 to facilitate learning and discussion.
 
-As this implementation reaches maturity, and is suited for
+As this implementation reaches maturity, and becomes suited for
 production-use, this note will be removed from the README.
 
 ## Documentation
@@ -45,6 +45,10 @@ how to integrate with it or why you might want to.  See the
 integrate with CMDR.
 
 ## Running in development
+
+CMDR is a [Leiningen](http://leiningen.org/) project, and behaves as
+you would expect in terms of running tests, launching REPLs, packaging
+uberjars, etc.
 
 CMDR runs as two microservices
 (`com.capitalone.commander.recorder` and
@@ -67,7 +71,7 @@ The easiest way to get CMDR's supporting services up-and-running
 quickly in development is via `docker-compose`.
 
 ``` sh
-$ docker-compose up --build
+$ docker-compose up
 ```
 
 Then run the CMDR services locally from the REPL or via `lein
