@@ -11,7 +11,7 @@
 ;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 ;; See the License for the specific language governing permissions and limitations under the License.
 
-(defproject com.capitalone/cmdr 0.3.0-alpha
+(defproject com.capitalone/cmdr "0.3.0-alpha"
   :min-lein-version "2.0.0"
   :description "Command handler in REST+CQRS+ES architecture."
   :url         "http://capitalone.com/"
