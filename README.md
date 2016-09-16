@@ -12,9 +12,10 @@ The role of the CMDR component is to handle incoming Commands by:
 1. Ensuring their conformity to Schemas (coming soon)
 2. Writing them down to the Log (Kafka in this implementation)
 
-Additionally, CMDR indexes all Commands and Events from their respective Kafka topics.
+Additionally, CMDR indexes all Commands and Events from their respective Kafka topics in order to:
 
-1. Indexing both Commands and Events on their respective topics
+1. Respond to read (GET) requests for information about Commands and Events
+2. Provide a Server Sent Events (SSE) interface to both Commands (`/commands/updates`) and Events (`/events/updates`)
 
 ## Documentation
 
