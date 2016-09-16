@@ -1,0 +1,61 @@
+<!-- Copyright 2016 Capital One Services, LLC -->
+
+<!-- Licensed under the Apache License, Version 2.0 (the "License"); -->
+<!-- you may not use this file except in compliance with the License. -->
+<!-- You may obtain a copy of the License at -->
+
+<!--     http://www.apache.org/licenses/LICENSE-2.0 -->
+
+<!-- Unless required by applicable law or agreed to in writing, software -->
+<!-- distributed under the License is distributed on an "AS IS" BASIS, -->
+<!-- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. -->
+<!-- See the License for the specific language governing permissions and limitations under the License. -->
+
+<configuration scan="true" scanPeriod="10 seconds">
+
+  <!-- Simple file output -->
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <!-- encoder defaults to ch.qos.logback.classic.encoder.PatternLayoutEncoder -->
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <!-- rollover daily -->
+      <fileNamePattern>logs/commander-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+      <timeBasedFileNamingAndTriggeringPolicy
+          class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+        <!-- or whenever the file size reaches 64 MB -->
+        <maxFileSize>64 MB</maxFileSize>
+      </timeBasedFileNamingAndTriggeringPolicy>
+    </rollingPolicy>
+
+    <!-- Safely log to the same file from multiple JVMs. Degrades performance! -->
+    <prudent>true</prudent>
+  </appender>
+
+
+  <!-- Console output -->
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <!-- encoder defaults to ch.qos.logback.classic.encoder.PatternLayoutEncoder -->
+    <encoder>
+      <pattern>%-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+    <!-- Only log level INFO and above -->
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>DEBUG</level>
+    </filter>
+  </appender>
+
+
+  <!-- Enable FILE and STDOUT appenders for all log messages.
+       By default, only log at level INFO and above. -->
+  <root level="INFO">
+    <appender-ref ref="FILE" />
+    <appender-ref ref="STDOUT" />
+  </root>
+
+  <!-- For loggers in the these namespaces, log at all levels. -->
+  <logger name="com.capitalone" level="DEBUG" />
+
+</configuration>

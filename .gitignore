@@ -1,0 +1,16 @@
+.DS_Store
+/target
+/classes
+/checkouts
+/logs
+/pom.xml
+/pom.xml.asc
+*.jar
+*.class
+/.lein-*
+/.nrepl-*
+/.idea
+/*.iml
+.bundle
+/vendor
+/data
