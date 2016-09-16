@@ -17,6 +17,17 @@ Additionally, CMDR indexes all Commands and Events from their respective Kafka t
 1. Respond to read (GET) requests for information about Commands and Events
 2. Provide a Server Sent Events (SSE) interface to both Commands (`/commands/updates`) and Events (`/events/updates`)
 
+## Status
+
+**IMPORTANT!** This is alpha-quality software, meant mostly to
+demonstrate the
+[Log-centric REST+CQRS+ES](https://speakerdeck.com/bobbycalderwood/commander-decoupled-immutable-rest-apis-with-kafka-streams)
+[architecture](./architecture.png) described in the linked talks, and
+to facilitate learning and discussion.
+
+As this implementation reaches maturity, and is suited for
+production-use, this note will be removed from the README.
+
 ## Documentation
 
 CMDR is the component in your system that handles all incoming
