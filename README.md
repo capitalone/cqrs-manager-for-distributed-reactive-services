@@ -140,7 +140,7 @@ $ postgres -D /usr/local/var/postgres
 Then bootstrap the database in a fourth shell:
 
 ``` sh
-$ bin/run com.capitalone.commander.common.component.database 'jdbc:postgresql://localhost/postgres?user=postgres&password=postgres' commander commander commander
+$ bin/run com.capitalone.commander.database 'jdbc:postgresql://localhost/postgres?user=postgres&password=postgres' commander commander commander
 ```
 
 You'll want to use `commander` as the password for the `commander` user for
