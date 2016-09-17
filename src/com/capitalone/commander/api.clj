@@ -18,7 +18,8 @@
             [clj-uuid :as uuid]
             [com.capitalone.commander :as commander]
             [com.capitalone.commander.database :as d]
-            [com.capitalone.commander.kafka :as k]))
+            [com.capitalone.commander.kafka :as k])
+  (:import [org.apache.kafka.clients.consumer Consumer]))
 
 (defprotocol CommandService
   (-create-command [this command-params]
@@ -162,7 +163,9 @@
                       kafka-producer
                       commands-topic
                       events-topic
-                      kafka-consumer-config
+                      kafka-consumer
+                      ch
+                      pub
                       commands-ch
                       commands-mult
                       events-ch
@@ -217,31 +220,45 @@
 
   c/Lifecycle
   (start [this]
-    (let [events-ch      (k/topics-consumer-ch kafka-consumer-config [events-topic])
-          events-mult    (a/mult events-ch)
-          events-ch-copy (a/chan 1)
-          _              (a/tap events-mult events-ch-copy)
+    (let [^Consumer consumer (:consumer kafka-consumer)
+          ch             (a/chan 1)
+          pub            (a/pub ch :topic)
 
+          events-ch      (a/chan 1)
+          events-mult    (a/mult events-ch)
+
+          events-ch-copy (a/chan 1)
           events-pub     (a/pub events-ch-copy (comp :parent :value))
 
-          commands-ch    (k/topics-consumer-ch kafka-consumer-config [commands-topic])
+          commands-ch    (a/chan 1)
           commands-mult  (a/mult commands-ch)]
+      (.subscribe consumer [commands-topic events-topic])
+
+      (a/sub pub commands-topic commands-ch)
+      (a/sub pub events-topic events-ch)
+      (a/tap events-mult events-ch-copy)
+
+      (k/kafka-consumer-onto-ch! kafka-consumer ch)
+
       (assoc this
+             :ch            ch
+             :pub           pub
              :events-ch     events-ch
              :events-mult   events-mult
              :events-pub    events-pub
              :commands-ch   commands-ch
              :commands-mult commands-mult)))
   (stop [this]
+    (when ch (a/close! ch))
+    (when pub (a/unsub-all pub))
     (when events-ch  (a/close! events-ch))
     (when events-pub (a/unsub-all events-pub))
     (when commands-ch (a/close! commands-ch))
     (dissoc this :events-ch :events-pub :commands-ch)))
 
 (defn construct-commander-api
-  [{:keys [commands-topic events-topic sync-timeout-ms kafka-consumer-config]
+  [{:keys [commands-topic events-topic sync-timeout-ms]
     :as config}]
-  (map->Commander {:commands-topic        commands-topic
-                   :events-topic          events-topic
-                   :kafka-consumer-config kafka-consumer-config
-                   :sync-timeout-ms       sync-timeout-ms}))
+  (map->Commander {:commands-topic  commands-topic
+                   :events-topic    events-topic
+                   :sync-timeout-ms sync-timeout-ms}))

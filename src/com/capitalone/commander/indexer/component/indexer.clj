@@ -17,7 +17,11 @@
             [io.pedestal.log :as log]
             [clojure.java.jdbc :as j]
             [com.capitalone.commander.kafka :as kafka]
-            [com.capitalone.commander.database :as database]))
+            [com.capitalone.commander.database :as database]
+            [com.capitalone.commander.database :as d]
+            [com.capitalone.commander.kafka :as k])
+  (:import [org.apache.kafka.clients.consumer Consumer ConsumerRebalanceListener]
+           (org.apache.kafka.common TopicPartition)))
 
 (set! *warn-on-reflection* true)
 
@@ -33,22 +37,6 @@
      :partition partition
      :offset    offset}))
 
-(defn record-commands!
-  "Records all commands arriving on commands-ch to the given database
-  component.  Returns a channel containing the results of the database
-  transactions."
-  ([database commands-ch]
-   (record-commands! database commands-ch 10))
-  ([database commands-ch in-flight]
-   (log/debug ::record-commands! [database commands-ch in-flight])
-   (a/go-loop []
-     (when-some [command (a/<! commands-ch)]
-       (try
-         (database/insert-commands! database (command-map command))
-         (catch Exception e
-           (log/error :msg "Error indexing command" :command command :exception e)))
-       (recur)))))
-
 (defn event-map
   [{:keys [key value topic partition offset timestamp] :as event}]
   (log/debug ::event-map [event])
@@ -62,48 +50,53 @@
      :partition partition
      :offset    offset}))
 
-(defn record-events!
-  "Records all events arriving on events-ch to the given database
-  component.  Returns a channel containing the results of the database
-  transactions."
-  ([database events-ch]
-   (record-events! database events-ch 10))
-  ([database events-ch in-flight]
-   (log/debug ::record-events! [database events-ch in-flight])
-   (a/go-loop []
-     (when-some [event (a/<! events-ch)]
-       (try
-         (database/insert-events! database (event-map event))
-         (catch Exception e
-           (log/error :msg "Error indexing event" :event event :exception e)))
-       (recur)))))
+(defn record-commands-and-events!
+  "Records all commands and events arriving on ch to the given database
+  component. Returns the go-loop channel that will convey :done when ch is closed."
+  [database commands-topic events-topic ch]
+  (log/debug ::record-events! [database commands-topic events-topic ch])
+  (a/go-loop []
+    (when-some [msg (a/<! ch)]
+      (try
+        (log/debug ::record-events! :msg :msg msg)
+        (condp = (:topic msg)
+          events-topic   (database/insert-events! database (event-map msg))
+          commands-topic (database/insert-commands! database (command-map msg))
+          (log/warn ::record-commands-and-events! "Unexpected topic and message"
+                    :topic (:topic msg)
+                    :msg msg))
+        (catch Exception e
+          (log/error :msg "Error indexing event" :msg msg :exception e)))
+      (recur))))
 
-(defrecord Indexer [database kafka-consumer-config
-                    commands-topic commands-partition commands-ch
-                    events-topic  events-partition  events-ch]
+(defrecord Indexer [database kafka-consumer commands-topic events-topic ch]
   component/Lifecycle
   (start [this]
-    (let [events-offset   (database/find-latest-events-offset database events-topic events-partition)
-          commands-offset (database/find-latest-commands-offset database commands-topic commands-partition)
-          commands-ch     (kafka/partition-topic-consumer-ch kafka-consumer-config
-                                                             commands-topic
-                                                             commands-partition)
-          events-ch      (kafka/partition-topic-consumer-ch kafka-consumer-config
-                                                            events-topic
-                                                            events-partition)]
-      (record-commands! database commands-ch)
-      (record-events!   database events-ch)
-      (assoc this
-             :commands-ch commands-ch
-             :events-ch   events-ch)))
+    (let [ch (a/chan 1)
+          ^Consumer consumer (:consumer kafka-consumer)]
+      (.subscribe consumer ^java.util.List [commands-topic events-topic]
+                  (reify ConsumerRebalanceListener
+                    (onPartitionsAssigned [_ partitions]
+                      (log/info ::ConsumerRebalanceListener :onPartitionsAssigned
+                                :partitions partitions)
+                      (doseq [^TopicPartition partition partitions]
+                        (let [offset (or (d/find-latest-partition-offset database
+                                                                         (.topic partition)
+                                                                         (.partition partition))
+                                         -1)]
+                          (.seek consumer partition (inc offset)))))
+                    (onPartitionsRevoked  [_ partitions]
+                      (log/info ::ConsumerRebalanceListener :onPartitionsRevoked
+                                :partitions partitions))))
+
+      (k/kafka-consumer-onto-ch! kafka-consumer ch)
+      (record-commands-and-events! database commands-topic events-topic ch)
+      (assoc this :ch ch)))
   (stop [this]
-    (when events-ch (a/close! events-ch))
-    (when commands-ch (a/close! commands-ch))
-    this))
+    (when ch (a/close! ch))
+    (dissoc this :ch)))
 
 (defn construct-indexer
   [config]
   (map->Indexer
-   (select-keys config [:kafka-consumer-config
-                        :commands-topic :commands-partition
-                        :events-topic   :events-partition])))
+   (select-keys config [:kafka-consumer-config :commands-topic :events-topic])))

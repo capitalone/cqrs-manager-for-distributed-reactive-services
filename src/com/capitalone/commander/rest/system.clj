@@ -19,7 +19,7 @@
             [com.capitalone.commander.rest.component.routes :refer [construct-routes]]
             [com.capitalone.commander.rest.component.pedestal :refer [construct-pedestal-server]]
             [com.capitalone.commander.database :refer [construct-jdbc-db]]
-            [com.capitalone.commander.kafka :refer [construct-producer]]
+            [com.capitalone.commander.kafka :refer [construct-producer construct-consumer]]
             [com.capitalone.commander.api :refer [construct-commander-api]]))
 
 (set! *warn-on-reflection* true)
@@ -37,10 +37,11 @@
          :endpoints      (construct-commander-endpoints)
          :routes         (construct-routes)
          :database       (construct-jdbc-db  (:database config))
+         :kafka-consumer (construct-consumer (:kafka-consumer config))
          :kafka-producer (construct-producer (:kafka-producer config))
          :api            (construct-commander-api (:api config)))
         (component/system-using
          {:http      [:routes]
           :routes    [:endpoints]
           :endpoints [:api]
-          :api       [:kafka-producer :database]}))))
+          :api       [:kafka-producer :kafka-consumer :database]}))))

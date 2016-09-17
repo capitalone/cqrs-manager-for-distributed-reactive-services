@@ -16,6 +16,7 @@
             [meta-merge.core :refer [meta-merge]]
             [io.pedestal.log :as log]
             [com.capitalone.commander.database :refer [construct-jdbc-db]]
+            [com.capitalone.commander.kafka :refer [construct-consumer]]
             [com.capitalone.commander.indexer.component.indexer :refer [construct-indexer]]))
 
 (set! *warn-on-reflection* true)
@@ -27,7 +28,9 @@
   (let [config (meta-merge config base-config)]
     (log/info :msg "Creating system" :config config)
     (-> (component/system-map
-         :database (construct-jdbc-db  (:database config))
-         :indexer (construct-indexer (:indexer config)))
+         :consumer (construct-consumer (:kafka-consumer config))
+         :database (construct-jdbc-db (:database config))
+         :indexer  (construct-indexer (:indexer config)))
         (component/system-using
-         {:indexer [:database]}))))
+          {:indexer {:database       :database
+                     :kafka-consumer :consumer}}))))

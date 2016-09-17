@@ -17,16 +17,13 @@
 (set! *warn-on-reflection* true)
 
 (def defaults
-  {:indexer {:commands-topic     "commands"
-              :commands-partition 0
-              :events-topic       "events"
-              :events-partition   0}})
+  {:indexer        {:commands-topic "commands"
+                    :events-topic   "events"}
+   :kafka-consumer {:client-id "commander-indexer-consumer"}})
 
 (def environ
-  {:indexer  {:commands-topic        (:commands-topic env)
-              :commands-partition    (:commands-partition env)
-              :events-topic          (:events-topic env)
-              :events-partition      (:events-partition env)
-              :kafka-consumer-config {"bootstrap.servers" (:kafka-servers env)
-                                      "group.id"          (:indexer-group-id env)}}
-   :database {:connection-uri (:database-uri env)}})
+  {:indexer        {:commands-topic (:commands-topic env)
+                    :events-topic   (:events-topic env)}
+   :kafka-consumer {:servers  (:kafka-servers env)
+                    :group-id (:indexer-group-id env)}
+   :database       {:connection-uri (:database-uri env)}})

@@ -27,10 +27,24 @@
 
 (set! *warn-on-reflection* true)
 
+(defprotocol CommonDataAccess
+  (-find-latest-partition-offset [database topic partition]
+    "Finds and returns the highest seen offset for the given topic partition."))
+
+(s/def ::CommonDataAccess (partial satisfies? CommonDataAccess))
+
+(defn find-latest-partition-offset
+  [database topic partition]
+  (log/debug ::find-latest-commands-offset [database topic partition])
+  (-find-latest-partition-offset database topic partition))
+
+(s/fdef find-latest-partition-offset
+        :args (s/cat :database  ::CommonDataAccess
+                     :topic     ::commander/topic
+                     :partition ::commander/partition)
+        :ret (s/nilable ::commander/offset))
+
 (defprotocol CommandDataAccess
-  (-find-latest-commands-offset [database topic part]
-    "Finds and returns the highest seen offset from the commands
-    topic.")
   (-fetch-commands [database limit offset]
     "Fetches commands from the given database component, returning a map of
       - :commands a vector of command maps
@@ -43,18 +57,7 @@
     "Inserts the given command maps into the given database component.
     Returns true if insert succeeded, false otherwise."))
 
-(defn find-latest-commands-offset
-  [database topic partition]
-  (log/debug ::find-latest-commands-offset [database topic partition])
-  (or (-find-latest-commands-offset database topic partition)
-      0))
-
 (s/def ::CommandDataAccess (partial satisfies? CommandDataAccess))
-(s/fdef find-latest-commands-offset
-        :args (s/cat :database ::CommandDataAccess
-                     :topic ::commander/topic
-                     :partition ::commander/partition)
-        :ret ::commander/offset)
 
 (defn fetch-commands
   "Fetches commands from the given database component, returning a map of
@@ -111,8 +114,6 @@
         :ret boolean?)
 
 (defprotocol EventDataAccess
-  (-find-latest-events-offset [database topic part]
-    "Finds and returns the highest seen offset for the given topic partition.")
   (-fetch-events [database limit offset]
     "Fetches events from the given database component, returning a map of
       - :events a vector of event maps
@@ -125,17 +126,7 @@
     "Inserts the given event maps into the given database component.
     Returns true if insert succeeded, false otherwise."))
 
-(defn find-latest-events-offset
-  [database topic part]
-  (log/debug ::find-latest-events-offset [database topic part])
-  (-find-latest-events-offset database topic part))
-
 (s/def ::EventDataAccess (partial satisfies? EventDataAccess))
-(s/fdef find-latest-events-offset
-        :args (s/cat :database ::EventDataAccess
-                     :topic ::commander/topic
-                     :partition ::commander/partition)
-        :ret ::commander/offset)
 
 (defn fetch-events
   "Fetches events from the given database component, returning a map of
@@ -213,11 +204,14 @@
     (when connection (.close ^java.lang.AutoCloseable connection))
     (assoc component :connection nil))
 
-  CommandDataAccess
-  (-find-latest-commands-offset [database topic part]
+  CommonDataAccess
+  (-find-latest-partition-offset [database topic part]
     (first (j/query database
-                    ["SELECT max(commander.offset) FROM commander WHERE command = true AND topic = ? AND partition = ?" topic part]
+                    ["SELECT max(commander.offset) FROM commander WHERE topic = ? AND partition = ?" topic part]
                     {:row-fn :max})))
+
+
+  CommandDataAccess
   (-fetch-commands [database limit offset]
     (let [commands-query (if (pos? limit)
                            ["SELECT id, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = true ORDER BY timestamp ASC LIMIT ? OFFSET ?"
@@ -242,10 +236,6 @@
                       :transaction? false}))
 
   EventDataAccess
-  (-find-latest-events-offset [database topic part]
-    (first (j/query database
-                    ["SELECT max(commander.offset) FROM commander WHERE command = false AND topic = ? AND partition = ?" topic part]
-                    {:row-fn :max})))
   (-fetch-events [database limit offset]
     (let [events-query (if (pos? limit)
                          ["SELECT id, parent, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = false ORDER BY timestamp ASC LIMIT ? OFFSET ?"
