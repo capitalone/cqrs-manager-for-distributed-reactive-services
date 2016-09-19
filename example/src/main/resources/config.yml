@@ -1,0 +1,30 @@
+---
+applicationId: kafka-streams-user-service
+bootstrapServers: localhost:9092
+zookeeperConnect: localhost:2181
+commandsTopic: commands
+eventsTopic: events
+customersTopic: customers
+commandsTopic: commands
+eventsTopic: events
+server:
+  applicationConnectors:
+    - type: http
+      port: 3000
+  adminConnectors:
+    - type: http
+      port: 3001
+logging:
+  level: INFO
+  loggers:
+    com.capitalone.commander: DEBUG
+  appenders:
+    - type: console
+    - type: file
+      threshold: INFO
+      logFormat: "%-6level [%d{HH:mm:ss.SSS}] [%t] %logger{5} - %X{code} %msg %n"
+      currentLogFilename: ./logs/application.log
+      archivedLogFilenamePattern: ./logs/application-%d{yyyy-MM-dd}-%i.log.gz
+      archivedFileCount: 7
+      timeZone: UTC
+      maxFileSize: 10MB
