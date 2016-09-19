@@ -4,7 +4,7 @@ CQRS Manager for Distributed Reactive Services (herein abbreviated
 CMDR), is a reference implementation for the key component in a
 specific [architecture](./architecture.png) for building distributed
 information services following a
-[Log-centric REST+CQRS+ES](https://speakerdeck.com/bobbycalderwood/commander-decoupled-immutable-rest-apis-with-kafka-streams)
+[Log-centric REST+CQRS+ES](https://speakerdeck.com/bobbycalderwood/commander-better-distributed-applications-through-cqrs-event-sourcing-and-immutable-logs)
 design.
 
 The role of the CMDR component is to handle incoming Commands by:
@@ -21,7 +21,7 @@ Additionally, CMDR indexes all Commands and Events from their respective Kafka t
 
 **IMPORTANT!** This is alpha-quality software, meant mostly to
 demonstrate the
-[Log-centric REST+CQRS+ES](https://speakerdeck.com/bobbycalderwood/commander-decoupled-immutable-rest-apis-with-kafka-streams)
+[Log-centric REST+CQRS+ES](https://speakerdeck.com/bobbycalderwood/commander-better-distributed-applications-through-cqrs-event-sourcing-and-immutable-logs)
 [architecture](./architecture.png) described in the linked talks, and
 to facilitate learning and discussion.
 
@@ -216,8 +216,8 @@ to run tests automatically every time a file is saved.
 
 ### Swagger/OpenAPI
 
-When running the API via `docker-compose` or from the repl, you can
-view the [Swagger/OpenAPI UI](http://localhost:3000/ui/).
+When running the API, you can view the
+[Swagger/OpenAPI UI](http://localhost:3000/ui/).
 
 Swagger/OpenAPI functionality provided by
 [pedestal-api](https://github.com/oliyh/pedestal-api).
@@ -237,7 +237,7 @@ You then run the application:
 ``` sh
 $ java -jar target/uberjar/cmdr-standalone.jar -m com.capitalone.commander.indexer
 $ # OR
-$ java -jar target/uberjar/cmdr-standalone.jar -m com.capitalone.commander.indexer
+$ java -jar target/uberjar/cmdr-standalone.jar -m com.capitalone.commander.rest
 ```
 
 ### Docker
