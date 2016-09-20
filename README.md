@@ -2,8 +2,8 @@
 
 CQRS Manager for Distributed Reactive Services (herein abbreviated
 CMDR), is a reference implementation for the key component in a
-specific [architecture](./architecture.png) for building distributed
-information services following a
+specific [architecture](./doc/architecture.png) for building
+distributed information services following a
 [Log-centric REST+CQRS+ES](https://speakerdeck.com/bobbycalderwood/commander-better-distributed-applications-through-cqrs-event-sourcing-and-immutable-logs)
 design.
 
@@ -22,7 +22,7 @@ Additionally, CMDR indexes all Commands and Events from their respective Kafka t
 **IMPORTANT!** This is alpha-quality software, meant mostly to
 demonstrate the
 [Log-centric REST+CQRS+ES](https://speakerdeck.com/bobbycalderwood/commander-better-distributed-applications-through-cqrs-event-sourcing-and-immutable-logs)
-[architecture](./architecture.png) described in the linked talks, and
+[architecture](./doc/architecture.png) described in the linked talks, and
 to facilitate learning and discussion.
 
 As this implementation reaches maturity, and becomes suited for
@@ -35,11 +35,11 @@ actions/writes, but it's totally ignorant of your business logic and
 domain. You'll need to build microservices that implement your
 business logic, and read-only REST endpoints to expose the resulting
 data.  You'll end up with a system architecture that looks
-[like this](./architecture.png), and has
+[like this](./doc/architecture.png), and has
 [many benefits](./doc/rationale.md).
 
-This README will help you get CMDR running, but doesn't tell you
-how to integrate with it or why you might want to.  See the
+This README will help you get CMDR running, but doesn't tell you how
+to integrate with it or why you might want to.  See the
 [rationale](./doc/rationale.md) for why you'd use CMDR, and
 [the contract documentation](./doc/using.md) for details about how to
 integrate with CMDR.
