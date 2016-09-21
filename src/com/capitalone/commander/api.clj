@@ -112,6 +112,18 @@
                      :id  ::commander/id)
         :ret ::commander/command)
 
+(defn command-map
+  [{:keys [key value topic partition offset timestamp] :as command}]
+  (log/debug ::command-map [command])
+  (let [{:keys [action data]} value]
+    {:id        key
+     :action    action
+     :data      data
+     :timestamp timestamp
+     :topic     topic
+     :partition partition
+     :offset    offset}))
+
 (defn commands-ch
   "Returns a core.async channel (ch if given) that will convey all
   commands arriving from the time of the call onward."
@@ -166,6 +178,19 @@
         :args (s/cat :api ::EventService
                      :id  ::commander/id)
         :ret ::commander/event)
+
+(defn event-map
+  [{:keys [key value topic partition offset timestamp] :as event}]
+  (log/debug ::event-map [event])
+  (let [{:keys [action data parent]} value]
+    {:id        key
+     :parent    parent
+     :action    action
+     :data      data
+     :timestamp timestamp
+     :topic     topic
+     :partition partition
+     :offset    offset}))
 
 (defn events-ch
   "Returns a core.async channel (ch if given) that will convey all
@@ -242,8 +267,10 @@
   (-get-command-by-id [this id]
     (d/fetch-command-by-id database id))
   (-commands-ch [this ch]
-    (a/tap commands-mult ch)
-    ch)
+    (let [int (a/chan 1 (map command-map))]
+      (a/pipe int ch)
+      (a/tap commands-mult int)
+      ch))
 
   CommandValidator
 ;;; TODO
@@ -255,8 +282,10 @@
   (-get-event-by-id [this id]
     (d/fetch-event-by-id database id))
   (-events-ch [this ch]
-    (a/tap events-mult ch)
-    ch)
+    (let [int (a/chan 1 (map event-map))]
+      (a/pipe int ch)
+      (a/tap events-mult int)
+      ch))
 
   c/Lifecycle
   (start [this]

@@ -16,39 +16,13 @@
             [com.stuartsierra.component :as component]
             [io.pedestal.log :as log]
             [clojure.java.jdbc :as j]
-            [com.capitalone.commander.kafka :as kafka]
-            [com.capitalone.commander.database :as database]
+            [com.capitalone.commander.api :as api]
             [com.capitalone.commander.database :as d]
             [com.capitalone.commander.kafka :as k])
   (:import [org.apache.kafka.clients.consumer Consumer ConsumerRebalanceListener]
-           (org.apache.kafka.common TopicPartition)))
+           [org.apache.kafka.common TopicPartition]))
 
 (set! *warn-on-reflection* true)
-
-(defn command-map
-  [{:keys [key value topic partition offset timestamp] :as command}]
-  (log/debug ::command-map [command])
-  (let [{:keys [action data]} value]
-    {:id        key
-     :action    action
-     :data      data
-     :timestamp timestamp
-     :topic     topic
-     :partition partition
-     :offset    offset}))
-
-(defn event-map
-  [{:keys [key value topic partition offset timestamp] :as event}]
-  (log/debug ::event-map [event])
-  (let [{:keys [action data parent]} value]
-    {:id        key
-     :parent    parent
-     :action    action
-     :data      data
-     :timestamp timestamp
-     :topic     topic
-     :partition partition
-     :offset    offset}))
 
 (defn record-commands-and-events!
   "Records all commands and events arriving on ch to the given database
@@ -60,8 +34,8 @@
       (try
         (log/debug ::record-events! :msg :msg msg)
         (condp = (:topic msg)
-          events-topic   (database/insert-events! database (event-map msg))
-          commands-topic (database/insert-commands! database (command-map msg))
+          events-topic   (d/insert-events! database (api/event-map msg))
+          commands-topic (d/insert-commands! database (api/command-map msg))
           (log/warn ::record-commands-and-events! "Unexpected topic and message"
                     :topic (:topic msg)
                     :msg msg))
