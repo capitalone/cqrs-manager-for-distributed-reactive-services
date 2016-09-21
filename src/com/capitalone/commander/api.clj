@@ -15,6 +15,7 @@
   (:require [clojure.spec :as s]
             [clojure.core.async :as a]
             [com.stuartsierra.component :as c]
+            [io.pedestal.log :as log]
             [clj-uuid :as uuid]
             [com.capitalone.commander :as commander]
             [com.capitalone.commander.database :as d]
@@ -64,6 +65,7 @@
   ([api command-params]
    (create-command api command-params false))
   ([api command-params sync?]
+   (log/info ::create-command [api command-params sync?])
    (if sync?
      (-create-command-sync api command-params (:sync-timeout-ms api))
      (-create-command api command-params))))
@@ -84,7 +86,9 @@
   indexed commands starting with offset."
   ([api] (list-commands api 0))
   ([api offset] (list-commands api offset 0))
-  ([api offset limit] (-list-commands api (or offset 0) (or limit 0))))
+  ([api offset limit]
+   (log/info ::list-commands [api offset limit])
+   (-list-commands api (or offset 0) (or limit 0))))
 
 (s/fdef list-commands
         :args (s/cat :api ::CommandService
@@ -100,6 +104,7 @@
   "Returns the indexed command with the given id, or nil if none
   found."
   [api id]
+  (log/info ::get-command-by-id [api id])
   (-get-command-by-id api id))
 
 (s/fdef get-command-by-id
@@ -111,9 +116,11 @@
   "Returns a core.async channel (ch if given) that will convey all
   commands arriving from the time of the call onward."
   ([api]
-    (commands-ch api (a/chan 1)))
+   (commands-ch api (a/chan 1)))
   ([api ch]
-    (-commands-ch api ch)))
+   (log/info ::commands-ch [api ch])
+   (-commands-ch api ch)
+   ch))
 
 (defn validate-command-params
   "Returns true if valid, a map of errors otherwise."
@@ -134,7 +141,9 @@
   indexed events starting with offset."
   ([api] (list-events api 0))
   ([api offset] (list-events api offset 0))
-  ([api offset limit] (-list-events api (or offset 0) (or limit 0))))
+  ([api offset limit]
+   (log/info ::list-events [api offset limit])
+   (-list-events api (or offset 0) (or limit 0))))
 
 (s/fdef list-events
         :args (s/cat :api ::EventService
@@ -150,6 +159,7 @@
   "Returns the indexed event with the given id, or nil if none
   found."
   [api id]
+  (log/info ::get-event-by-id [api id])
   (-get-event-by-id api id))
 
 (s/fdef get-event-by-id
@@ -161,9 +171,11 @@
   "Returns a core.async channel (ch if given) that will convey all
   events arriving from the time of the call onward."
   ([api]
-    (events-ch api (a/chan 1)))
+   (events-ch api (a/chan 1)))
   ([api ch]
-    (-events-ch api ch)))
+   (log/info ::events-ch [api ch])
+   (-events-ch api ch)
+   ch))
 
 (defn- command-record
   [topic id command]
