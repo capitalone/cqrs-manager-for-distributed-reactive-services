@@ -35,7 +35,10 @@
     is 0, returns all indexed commands starting with offset.")
   (-get-command-by-id [this id]
     "Returns the indexed command with the given id, or nil if none
-    found."))
+    found.")
+  (-commands-ch [this ch]
+    "Returns ch, the given core.async channel that will convey all
+    commands (from time of call onward)."))
 
 (defprotocol CommandValidator
   (-validate-command-params [this command-params]
@@ -47,7 +50,10 @@
     is 0, returns all indexed events starting with offset.")
   (-get-event-by-id [this id]
     "Returns the indexed event with the given id, or nil if none
-    found."))
+    found.")
+  (-events-ch [this ch]
+    "Returns ch, the given core.async channel that will convey all
+    events (from time of call onward)."))
 
 (defn create-command
   "Creates a command by recording to the Log. If sync? is false (the
@@ -101,6 +107,14 @@
                      :id  ::commander/id)
         :ret ::commander/command)
 
+(defn commands-ch
+  "Returns a core.async channel (ch if given) that will convey all
+  commands arriving from the time of the call onward."
+  ([api]
+    (commands-ch api (a/chan 1)))
+  ([api ch]
+    (-commands-ch api ch)))
+
 (defn validate-command-params
   "Returns true if valid, a map of errors otherwise."
   [api command-params]
@@ -142,6 +156,14 @@
         :args (s/cat :api ::EventService
                      :id  ::commander/id)
         :ret ::commander/event)
+
+(defn events-ch
+  "Returns a core.async channel (ch if given) that will convey all
+  events arriving from the time of the call onward."
+  ([api]
+    (events-ch api (a/chan 1)))
+  ([api ch]
+    (-events-ch api ch)))
 
 (defn- command-record
   [topic id command]
@@ -207,6 +229,9 @@
     (d/fetch-commands database offset limit))
   (-get-command-by-id [this id]
     (d/fetch-command-by-id database id))
+  (-commands-ch [this ch]
+    (a/tap commands-mult ch)
+    ch)
 
   CommandValidator
 ;;; TODO
@@ -217,6 +242,9 @@
     (d/fetch-events database offset limit))
   (-get-event-by-id [this id]
     (d/fetch-event-by-id database id))
+  (-events-ch [this ch]
+    (a/tap events-mult ch)
+    ch)
 
   c/Lifecycle
   (start [this]
