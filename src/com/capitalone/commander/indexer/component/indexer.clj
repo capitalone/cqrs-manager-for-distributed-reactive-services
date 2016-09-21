@@ -73,8 +73,10 @@
   component/Lifecycle
   (start [this]
     (let [ch (a/chan 1)
-          ^Consumer consumer (:consumer kafka-consumer)]
-      (.subscribe consumer ^java.util.List [commands-topic events-topic]
+          ^Consumer consumer (:consumer kafka-consumer)
+          ^java.util.Collection topics [commands-topic events-topic]]
+      (.subscribe consumer
+                  topics
                   (reify ConsumerRebalanceListener
                     (onPartitionsAssigned [_ partitions]
                       (log/info ::ConsumerRebalanceListener :onPartitionsAssigned
