@@ -315,6 +315,6 @@
   (start [this] (assoc this :routes (build-routes this)))
   (stop [this] (dissoc this :routes)))
 
-(defn construct-commander-endpoints
+(defn construct-commander-rest-endpoints
   []
   (map->Endpoints {}))
