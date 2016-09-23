@@ -31,8 +31,10 @@
     value is a vector containing the completion event id if
     successful.  If ")
   (-list-commands [this offset limit]
-    "Returns `limit` indexed commands, starting at `offset`.  If limit
-    is 0, returns all indexed commands starting with offset.")
+    "Returns a map of :commands, :limit, :offset, and :total,
+    where :commands is `limit` indexed commands, starting at `offset`.
+    If limit is 0, returns all indexed commands starting with
+    offset. :total is the total count of all commands.")
   (-get-command-by-id [this id]
     "Returns the indexed command with the given id, or nil if none
     found."))
@@ -43,8 +45,10 @@
 
 (defprotocol EventService
   (-list-events [this offset limit]
-    "Returns `limit` indexed events, starting at `offset`.  If limit
-    is 0, returns all indexed events starting with offset.")
+    "Returns a map of :events, :limit, :offset, and :total,
+    where :events is `limit` indexed events, starting at `offset`.
+    If limit is 0, returns all indexed events starting with
+    offset. :total is the total count of all events.")
   (-get-event-by-id [this id]
     "Returns the indexed event with the given id, or nil if none
     found."))
@@ -73,22 +77,26 @@
                    #(= (-> % :ret :data)   (-> % :args :command-params :data))))
 
 (defn list-commands
-  "Returns a vector containing `limit` indexed commands, starting at `offset`,
-  (which defaults to 0). If limit is 0 (the default), returns all
-  indexed commands starting with offset."
+  "Returns a map of :commands, :limit, :offset, and :total,
+   where :commands is `limit` indexed commands, starting at `offset`.
+   If limit is 0, returns all indexed commands starting with
+   offset. :total is the total count of all commands."
   ([api] (list-commands api 0))
   ([api offset] (list-commands api offset 0))
   ([api offset limit] (-list-commands api (or offset 0) (or limit 0))))
+
+(s/def ::commands (s/every ::commander/command))
+(s/def ::total (s/int-in 0 Long/MAX_VALUE))
 
 (s/fdef list-commands
         :args (s/cat :api ::CommandService
                      :offset (s/nilable (s/int-in 0 Long/MAX_VALUE))
                      :limit (s/nilable (s/int-in 0 Long/MAX_VALUE)))
-        :ret (s/every ::commander/command)
+        :ret (s/keys :req-un [::commands ::commander/limit ::commander/offset ::total])
         :fn #(let [limit (-> % :args :limit)]
-              (if (pos? limit)
-                (= (-> % :ret count) limit)
-                true)))
+               (if (pos? limit)
+                 (= (-> % :ret count) limit)
+                 true)))
 
 (defn get-command-by-id
   "Returns the indexed command with the given id, or nil if none
@@ -115,22 +123,24 @@
 (s/def ::EventService (partial satisfies? EventService))
 
 (defn list-events
-  "Returns a vector containing `limit` indexed events, starting at `offset`,
-  (which defaults to 0). If limit is 0 (the default), returns all
-  indexed events starting with offset."
+  "Returns a map of :events, :limit, :offset, and :total,
+   where :events is `limit` indexed events, starting at `offset`.
+   If limit is 0, returns all indexed events starting with
+   offset. :total is the total count of all events."
   ([api] (list-events api 0))
   ([api offset] (list-events api offset 0))
   ([api offset limit] (-list-events api (or offset 0) (or limit 0))))
 
+(s/def ::events (s/every ::commander/event))
 (s/fdef list-events
         :args (s/cat :api ::EventService
                      :offset (s/nilable (s/int-in 0 Long/MAX_VALUE))
                      :limit (s/nilable (s/int-in 0 Long/MAX_VALUE)))
-        :ret (s/every ::commander/event)
+        :ret (s/keys :req-un [::events ::commander/limit ::commander/offset ::total])
         :fn #(let [limit (-> % :args :limit)]
-              (if (pos? limit)
-                (= (-> % :ret count) limit)
-                true)))
+               (if (pos? limit)
+                 (= (-> % :ret count) limit)
+                 true)))
 
 (defn get-event-by-id
   "Returns the indexed event with the given id, or nil if none

@@ -50,7 +50,7 @@
       - :commands a vector of command maps
       - :limit the limit passed to the query
       - :offset the offset passed to the query
-      - :count the total count of commands")
+      - :total the total count of commands")
   (-fetch-command-by-id [database id]
     "Fetches and returns a single command from the given database component, identified by its UUID.")
   (-insert-commands! [database commands]
@@ -64,7 +64,7 @@
     - :commands a vector of command maps
     - :limit the limit passed to the query
     - :offset the offset passed to the query
-    - :count the total count of commands"
+    - :total the total count of commands"
   ([database]
    (fetch-commands database 0 0))
   ([database limit offset]
@@ -119,7 +119,7 @@
       - :events a vector of event maps
       - :limit the limit passed to the query
       - :offset the offset passed to the query
-      - :count the total count of events")
+      - :total the total count of events")
   (-fetch-event-by-id [database id]
     "Fetches and returns a single event from the given database component, identified by its UUID.")
   (-insert-events! [database events]
@@ -133,7 +133,7 @@
     - :events a vector of event maps
     - :limit the limit passed to the query
     - :offset the offset passed to the query
-    - :count the total count of events"
+    - :total the total count of events"
   ([database]
    (fetch-events database nil nil))
   ([database limit offset]
@@ -223,7 +223,7 @@
         {:commands (j/query database commands-query)
          :offset   offset
          :limit    limit
-         :count    (first (j/query database
+         :total    (first (j/query database
                                    ["SELECT count(id) FROM commander WHERE command = true"]
                                    {:row-fn :count}))})))
   (-fetch-command-by-id [database id]
@@ -247,7 +247,7 @@
         {:events (j/query database events-query)
          :offset offset
          :limit  limit
-         :count  (first (j/query database
+         :total  (first (j/query database
                                  ["SELECT count(id) FROM commander WHERE command = false"]
                                  {:row-fn :count}))})))
   (-fetch-event-by-id [database id]
