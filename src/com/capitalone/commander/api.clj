@@ -22,6 +22,8 @@
             [com.capitalone.commander.kafka :as k])
   (:import [org.apache.kafka.clients.consumer Consumer]))
 
+(set! *warn-on-reflection* true)
+
 (defprotocol CommandService
   (-create-command [this command-params]
     "Creates a command from the command-params and records to the
