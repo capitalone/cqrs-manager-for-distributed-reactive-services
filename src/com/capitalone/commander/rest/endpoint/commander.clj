@@ -92,7 +92,7 @@
    :responses  {200 {:body {:commands [Command]
                             :limit    s/Int
                             :offset   s/Int
-                            :count    s/Int}}}}
+                            :total    s/Int}}}}
   [{:keys [component] :as request}]
   (let [limit           (get-in request [:query-params :limit])
         offset          (get-in request [:query-params :offset])
@@ -118,7 +118,7 @@
    :responses  {200 {:body {:events [Event]
                             :limit  s/Int
                             :offset s/Int
-                            :count  s/Int}}}}
+                            :total  s/Int}}}}
   [{:keys [component] :as request}]
   (let [limit         (get-in request [:query-params :limit])
         offset        (get-in request [:query-params :offset])
