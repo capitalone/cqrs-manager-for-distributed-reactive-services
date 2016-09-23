@@ -25,6 +25,7 @@ message UUID {
 message CommandParams {
   string action = 1;
   google.protobuf.Struct data = 2;
+  bool sync = 3;
 }
 
 message Command {
@@ -72,7 +73,6 @@ message StreamRequest {}
 
 service Commander {
   rpc CreateCommand(CommandParams) returns (Command) {}
-  rpc CreateCommandSync(CommandParams) returns (Command) {}
   rpc ListCommands(PagingInfo) returns (PagedCommands) {}
   rpc CommandById(UUID) returns (Command) {}
   rpc CommandStream(StreamRequest) returns (stream Command) {}

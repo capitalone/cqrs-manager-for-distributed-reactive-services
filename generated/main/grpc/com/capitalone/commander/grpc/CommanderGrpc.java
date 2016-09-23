@@ -37,15 +37,6 @@ public class CommanderGrpc {
           io.grpc.protobuf.ProtoUtils.marshaller(com.capitalone.commander.grpc.CommanderProtos.CommandParams.getDefaultInstance()),
           io.grpc.protobuf.ProtoUtils.marshaller(com.capitalone.commander.grpc.CommanderProtos.Command.getDefaultInstance()));
   @io.grpc.ExperimentalApi("https://github.com/grpc/grpc-java/issues/1901")
-  public static final io.grpc.MethodDescriptor<com.capitalone.commander.grpc.CommanderProtos.CommandParams,
-      com.capitalone.commander.grpc.CommanderProtos.Command> METHOD_CREATE_COMMAND_SYNC =
-      io.grpc.MethodDescriptor.create(
-          io.grpc.MethodDescriptor.MethodType.UNARY,
-          generateFullMethodName(
-              "commander.Commander", "CreateCommandSync"),
-          io.grpc.protobuf.ProtoUtils.marshaller(com.capitalone.commander.grpc.CommanderProtos.CommandParams.getDefaultInstance()),
-          io.grpc.protobuf.ProtoUtils.marshaller(com.capitalone.commander.grpc.CommanderProtos.Command.getDefaultInstance()));
-  @io.grpc.ExperimentalApi("https://github.com/grpc/grpc-java/issues/1901")
   public static final io.grpc.MethodDescriptor<com.capitalone.commander.grpc.CommanderProtos.PagingInfo,
       com.capitalone.commander.grpc.CommanderProtos.PagedCommands> METHOD_LIST_COMMANDS =
       io.grpc.MethodDescriptor.create(
@@ -136,13 +127,6 @@ public class CommanderGrpc {
 
     /**
      */
-    public void createCommandSync(com.capitalone.commander.grpc.CommanderProtos.CommandParams request,
-        io.grpc.stub.StreamObserver<com.capitalone.commander.grpc.CommanderProtos.Command> responseObserver) {
-      asyncUnimplementedUnaryCall(METHOD_CREATE_COMMAND_SYNC, responseObserver);
-    }
-
-    /**
-     */
     public void listCommands(com.capitalone.commander.grpc.CommanderProtos.PagingInfo request,
         io.grpc.stub.StreamObserver<com.capitalone.commander.grpc.CommanderProtos.PagedCommands> responseObserver) {
       asyncUnimplementedUnaryCall(METHOD_LIST_COMMANDS, responseObserver);
@@ -192,13 +176,6 @@ public class CommanderGrpc {
                 com.capitalone.commander.grpc.CommanderProtos.CommandParams,
                 com.capitalone.commander.grpc.CommanderProtos.Command>(
                   this, METHODID_CREATE_COMMAND)))
-          .addMethod(
-            METHOD_CREATE_COMMAND_SYNC,
-            asyncUnaryCall(
-              new MethodHandlers<
-                com.capitalone.commander.grpc.CommanderProtos.CommandParams,
-                com.capitalone.commander.grpc.CommanderProtos.Command>(
-                  this, METHODID_CREATE_COMMAND_SYNC)))
           .addMethod(
             METHOD_LIST_COMMANDS,
             asyncUnaryCall(
@@ -269,14 +246,6 @@ public class CommanderGrpc {
         io.grpc.stub.StreamObserver<com.capitalone.commander.grpc.CommanderProtos.Command> responseObserver) {
       asyncUnaryCall(
           getChannel().newCall(METHOD_CREATE_COMMAND, getCallOptions()), request, responseObserver);
-    }
-
-    /**
-     */
-    public void createCommandSync(com.capitalone.commander.grpc.CommanderProtos.CommandParams request,
-        io.grpc.stub.StreamObserver<com.capitalone.commander.grpc.CommanderProtos.Command> responseObserver) {
-      asyncUnaryCall(
-          getChannel().newCall(METHOD_CREATE_COMMAND_SYNC, getCallOptions()), request, responseObserver);
     }
 
     /**
@@ -355,13 +324,6 @@ public class CommanderGrpc {
 
     /**
      */
-    public com.capitalone.commander.grpc.CommanderProtos.Command createCommandSync(com.capitalone.commander.grpc.CommanderProtos.CommandParams request) {
-      return blockingUnaryCall(
-          getChannel(), METHOD_CREATE_COMMAND_SYNC, getCallOptions(), request);
-    }
-
-    /**
-     */
     public com.capitalone.commander.grpc.CommanderProtos.PagedCommands listCommands(com.capitalone.commander.grpc.CommanderProtos.PagingInfo request) {
       return blockingUnaryCall(
           getChannel(), METHOD_LIST_COMMANDS, getCallOptions(), request);
@@ -433,14 +395,6 @@ public class CommanderGrpc {
 
     /**
      */
-    public com.google.common.util.concurrent.ListenableFuture<com.capitalone.commander.grpc.CommanderProtos.Command> createCommandSync(
-        com.capitalone.commander.grpc.CommanderProtos.CommandParams request) {
-      return futureUnaryCall(
-          getChannel().newCall(METHOD_CREATE_COMMAND_SYNC, getCallOptions()), request);
-    }
-
-    /**
-     */
     public com.google.common.util.concurrent.ListenableFuture<com.capitalone.commander.grpc.CommanderProtos.PagedCommands> listCommands(
         com.capitalone.commander.grpc.CommanderProtos.PagingInfo request) {
       return futureUnaryCall(
@@ -473,13 +427,12 @@ public class CommanderGrpc {
   }
 
   private static final int METHODID_CREATE_COMMAND = 0;
-  private static final int METHODID_CREATE_COMMAND_SYNC = 1;
-  private static final int METHODID_LIST_COMMANDS = 2;
-  private static final int METHODID_COMMAND_BY_ID = 3;
-  private static final int METHODID_COMMAND_STREAM = 4;
-  private static final int METHODID_LIST_EVENTS = 5;
-  private static final int METHODID_EVENT_BY_ID = 6;
-  private static final int METHODID_EVENT_STREAM = 7;
+  private static final int METHODID_LIST_COMMANDS = 1;
+  private static final int METHODID_COMMAND_BY_ID = 2;
+  private static final int METHODID_COMMAND_STREAM = 3;
+  private static final int METHODID_LIST_EVENTS = 4;
+  private static final int METHODID_EVENT_BY_ID = 5;
+  private static final int METHODID_EVENT_STREAM = 6;
 
   private static class MethodHandlers<Req, Resp> implements
       io.grpc.stub.ServerCalls.UnaryMethod<Req, Resp>,
@@ -500,10 +453,6 @@ public class CommanderGrpc {
       switch (methodId) {
         case METHODID_CREATE_COMMAND:
           serviceImpl.createCommand((com.capitalone.commander.grpc.CommanderProtos.CommandParams) request,
-              (io.grpc.stub.StreamObserver<com.capitalone.commander.grpc.CommanderProtos.Command>) responseObserver);
-          break;
-        case METHODID_CREATE_COMMAND_SYNC:
-          serviceImpl.createCommandSync((com.capitalone.commander.grpc.CommanderProtos.CommandParams) request,
               (io.grpc.stub.StreamObserver<com.capitalone.commander.grpc.CommanderProtos.Command>) responseObserver);
           break;
         case METHODID_LIST_COMMANDS:
@@ -549,7 +498,6 @@ public class CommanderGrpc {
   public static io.grpc.ServiceDescriptor getServiceDescriptor() {
     return new io.grpc.ServiceDescriptor(SERVICE_NAME,
         METHOD_CREATE_COMMAND,
-        METHOD_CREATE_COMMAND_SYNC,
         METHOD_LIST_COMMANDS,
         METHOD_COMMAND_BY_ID,
         METHOD_COMMAND_STREAM,

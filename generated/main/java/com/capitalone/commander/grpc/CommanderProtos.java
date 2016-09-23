@@ -543,6 +543,11 @@ public final class CommanderProtos {
      * <code>optional .google.protobuf.Struct data = 2;</code>
      */
     com.google.protobuf.StructOrBuilder getDataOrBuilder();
+
+    /**
+     * <code>optional bool sync = 3;</code>
+     */
+    boolean getSync();
   }
   /**
    * Protobuf type {@code commander.CommandParams}
@@ -557,6 +562,7 @@ public final class CommanderProtos {
     }
     private CommandParams() {
       action_ = "";
+      sync_ = false;
     }
 
     @java.lang.Override
@@ -601,6 +607,11 @@ public final class CommanderProtos {
                 data_ = subBuilder.buildPartial();
               }
 
+              break;
+            }
+            case 24: {
+
+              sync_ = input.readBool();
               break;
             }
           }
@@ -681,6 +692,15 @@ public final class CommanderProtos {
       return getData();
     }
 
+    public static final int SYNC_FIELD_NUMBER = 3;
+    private boolean sync_;
+    /**
+     * <code>optional bool sync = 3;</code>
+     */
+    public boolean getSync() {
+      return sync_;
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -699,6 +719,9 @@ public final class CommanderProtos {
       if (data_ != null) {
         output.writeMessage(2, getData());
       }
+      if (sync_ != false) {
+        output.writeBool(3, sync_);
+      }
     }
 
     public int getSerializedSize() {
@@ -712,6 +735,10 @@ public final class CommanderProtos {
       if (data_ != null) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(2, getData());
+      }
+      if (sync_ != false) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBoolSize(3, sync_);
       }
       memoizedSize = size;
       return size;
@@ -736,6 +763,8 @@ public final class CommanderProtos {
         result = result && getData()
             .equals(other.getData());
       }
+      result = result && (getSync()
+          == other.getSync());
       return result;
     }
 
@@ -752,6 +781,9 @@ public final class CommanderProtos {
         hash = (37 * hash) + DATA_FIELD_NUMBER;
         hash = (53 * hash) + getData().hashCode();
       }
+      hash = (37 * hash) + SYNC_FIELD_NUMBER;
+      hash = (53 * hash) + com.google.protobuf.Internal.hashBoolean(
+          getSync());
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
       return hash;
@@ -878,6 +910,8 @@ public final class CommanderProtos {
           data_ = null;
           dataBuilder_ = null;
         }
+        sync_ = false;
+
         return this;
       }
 
@@ -906,6 +940,7 @@ public final class CommanderProtos {
         } else {
           result.data_ = dataBuilder_.build();
         }
+        result.sync_ = sync_;
         onBuilt();
         return result;
       }
@@ -953,6 +988,9 @@ public final class CommanderProtos {
         }
         if (other.hasData()) {
           mergeData(other.getData());
+        }
+        if (other.getSync() != false) {
+          setSync(other.getSync());
         }
         onChanged();
         return this;
@@ -1164,6 +1202,32 @@ public final class CommanderProtos {
           data_ = null;
         }
         return dataBuilder_;
+      }
+
+      private boolean sync_ ;
+      /**
+       * <code>optional bool sync = 3;</code>
+       */
+      public boolean getSync() {
+        return sync_;
+      }
+      /**
+       * <code>optional bool sync = 3;</code>
+       */
+      public Builder setSync(boolean value) {
+        
+        sync_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional bool sync = 3;</code>
+       */
+      public Builder clearSync() {
+        
+        sync_ = false;
+        onChanged();
+        return this;
       }
       public final Builder setUnknownFields(
           final com.google.protobuf.UnknownFieldSet unknownFields) {
@@ -6988,39 +7052,38 @@ public final class CommanderProtos {
     java.lang.String[] descriptorData = {
       "\n\017commander.proto\022\tcommander\032\034google/pro" +
       "tobuf/struct.proto\"\025\n\004UUID\022\r\n\005value\030\001 \001(" +
-      "\t\"F\n\rCommandParams\022\016\n\006action\030\001 \001(\t\022%\n\004da" +
-      "ta\030\002 \001(\0132\027.google.protobuf.Struct\"\305\001\n\007Co" +
-      "mmand\022\033\n\002id\030\001 \001(\0132\017.commander.UUID\022\016\n\006ac" +
-      "tion\030\002 \001(\t\022%\n\004data\030\003 \001(\0132\027.google.protob" +
-      "uf.Struct\022\021\n\ttimestamp\030\004 \001(\003\022\r\n\005topic\030\005 " +
-      "\001(\t\022\021\n\tpartition\030\006 \001(\005\022\016\n\006offset\030\007 \001(\003\022!" +
-      "\n\010children\030\010 \003(\0132\017.commander.UUID\"c\n\rPag" +
-      "edCommands\022\r\n\005limit\030\001 \001(\003\022\016\n\006offset\030\002 \001(",
-      "\003\022\r\n\005total\030\003 \001(\003\022$\n\010commands\030\004 \003(\0132\022.com" +
-      "mander.Command\"\301\001\n\005Event\022\033\n\002id\030\001 \001(\0132\017.c" +
-      "ommander.UUID\022\016\n\006action\030\002 \001(\t\022%\n\004data\030\003 " +
-      "\001(\0132\027.google.protobuf.Struct\022\021\n\ttimestam" +
-      "p\030\004 \001(\003\022\r\n\005topic\030\005 \001(\t\022\021\n\tpartition\030\006 \001(" +
-      "\005\022\016\n\006offset\030\007 \001(\003\022\037\n\006parent\030\010 \001(\0132\017.comm" +
-      "ander.UUID\"]\n\013PagedEvents\022\r\n\005limit\030\001 \001(\003" +
-      "\022\016\n\006offset\030\002 \001(\003\022\r\n\005total\030\003 \001(\003\022 \n\006event" +
-      "s\030\004 \003(\0132\020.commander.Event\"+\n\nPagingInfo\022" +
-      "\r\n\005limit\030\001 \001(\003\022\016\n\006offset\030\002 \001(\003\"\017\n\rStream",
-      "Request2\375\003\n\tCommander\022?\n\rCreateCommand\022\030" +
-      ".commander.CommandParams\032\022.commander.Com" +
-      "mand\"\000\022C\n\021CreateCommandSync\022\030.commander." +
-      "CommandParams\032\022.commander.Command\"\000\022A\n\014L" +
-      "istCommands\022\025.commander.PagingInfo\032\030.com" +
-      "mander.PagedCommands\"\000\0224\n\013CommandById\022\017." +
-      "commander.UUID\032\022.commander.Command\"\000\022A\n\r" +
-      "CommandStream\022\030.commander.StreamRequest\032" +
-      "\022.commander.Command\"\0000\001\022=\n\nListEvents\022\025." +
-      "commander.PagingInfo\032\026.commander.PagedEv",
-      "ents\"\000\0220\n\tEventById\022\017.commander.UUID\032\020.c" +
-      "ommander.Event\"\000\022=\n\013EventStream\022\030.comman" +
-      "der.StreamRequest\032\020.commander.Event\"\0000\001B" +
-      "0\n\035com.capitalone.commander.grpcB\017Comman" +
-      "derProtosb\006proto3"
+      "\t\"T\n\rCommandParams\022\016\n\006action\030\001 \001(\t\022%\n\004da" +
+      "ta\030\002 \001(\0132\027.google.protobuf.Struct\022\014\n\004syn" +
+      "c\030\003 \001(\010\"\305\001\n\007Command\022\033\n\002id\030\001 \001(\0132\017.comman" +
+      "der.UUID\022\016\n\006action\030\002 \001(\t\022%\n\004data\030\003 \001(\0132\027" +
+      ".google.protobuf.Struct\022\021\n\ttimestamp\030\004 \001" +
+      "(\003\022\r\n\005topic\030\005 \001(\t\022\021\n\tpartition\030\006 \001(\005\022\016\n\006" +
+      "offset\030\007 \001(\003\022!\n\010children\030\010 \003(\0132\017.command" +
+      "er.UUID\"c\n\rPagedCommands\022\r\n\005limit\030\001 \001(\003\022",
+      "\016\n\006offset\030\002 \001(\003\022\r\n\005total\030\003 \001(\003\022$\n\010comman" +
+      "ds\030\004 \003(\0132\022.commander.Command\"\301\001\n\005Event\022\033" +
+      "\n\002id\030\001 \001(\0132\017.commander.UUID\022\016\n\006action\030\002 " +
+      "\001(\t\022%\n\004data\030\003 \001(\0132\027.google.protobuf.Stru" +
+      "ct\022\021\n\ttimestamp\030\004 \001(\003\022\r\n\005topic\030\005 \001(\t\022\021\n\t" +
+      "partition\030\006 \001(\005\022\016\n\006offset\030\007 \001(\003\022\037\n\006paren" +
+      "t\030\010 \001(\0132\017.commander.UUID\"]\n\013PagedEvents\022" +
+      "\r\n\005limit\030\001 \001(\003\022\016\n\006offset\030\002 \001(\003\022\r\n\005total\030" +
+      "\003 \001(\003\022 \n\006events\030\004 \003(\0132\020.commander.Event\"" +
+      "+\n\nPagingInfo\022\r\n\005limit\030\001 \001(\003\022\016\n\006offset\030\002",
+      " \001(\003\"\017\n\rStreamRequest2\270\003\n\tCommander\022?\n\rC" +
+      "reateCommand\022\030.commander.CommandParams\032\022" +
+      ".commander.Command\"\000\022A\n\014ListCommands\022\025.c" +
+      "ommander.PagingInfo\032\030.commander.PagedCom" +
+      "mands\"\000\0224\n\013CommandById\022\017.commander.UUID\032" +
+      "\022.commander.Command\"\000\022A\n\rCommandStream\022\030" +
+      ".commander.StreamRequest\032\022.commander.Com" +
+      "mand\"\0000\001\022=\n\nListEvents\022\025.commander.Pagin" +
+      "gInfo\032\026.commander.PagedEvents\"\000\0220\n\tEvent" +
+      "ById\022\017.commander.UUID\032\020.commander.Event\"",
+      "\000\022=\n\013EventStream\022\030.commander.StreamReque" +
+      "st\032\020.commander.Event\"\0000\001B0\n\035com.capitalo" +
+      "ne.commander.grpcB\017CommanderProtosb\006prot" +
+      "o3"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -7046,7 +7109,7 @@ public final class CommanderProtos {
     internal_static_commander_CommandParams_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_commander_CommandParams_descriptor,
-        new java.lang.String[] { "Action", "Data", });
+        new java.lang.String[] { "Action", "Data", "Sync", });
     internal_static_commander_Command_descriptor =
       getDescriptor().getMessageTypes().get(2);
     internal_static_commander_Command_fieldAccessorTable = new
