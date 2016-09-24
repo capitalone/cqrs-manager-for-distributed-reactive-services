@@ -1,0 +1,83 @@
+// Copyright 2016 Capital One Services, LLC
+
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+
+//     http://www.apache.org/licenses/LICENSE-2.0
+
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and limitations under the License.
+
+syntax = "proto3";
+package commander;
+option java_package = "com.capitalone.commander.grpc";
+option java_outer_classname = "CommanderProtos";
+
+import "google/protobuf/struct.proto";
+
+message UUID {
+  string value = 1;
+}
+
+message CommandParams {
+  string action = 1;
+  google.protobuf.Struct data = 2;
+  bool sync = 3;
+}
+
+message Command {
+  UUID id = 1;
+  string action = 2;
+  google.protobuf.Struct data = 3;
+  int64 timestamp = 4;
+  string topic = 5;
+  int32 partition = 6;
+  int64 offset = 7;
+  repeated UUID children = 8;
+}
+
+message PagedCommands {
+  int64 limit = 1;
+  int64 offset = 2;
+  int64 total = 3;
+  repeated Command commands = 4;
+}
+
+message Event {
+  UUID id = 1;
+  string action = 2;
+  google.protobuf.Struct data = 3;
+  int64 timestamp = 4;
+  string topic = 5;
+  int32 partition = 6;
+  int64 offset = 7;
+  UUID parent = 8;
+}
+
+message PagedEvents {
+  int64 limit = 1;
+  int64 offset = 2;
+  int64 total = 3;
+  repeated Event events = 4;
+}
+
+message PagingInfo {
+  int64 limit = 1;
+  int64 offset = 2;
+}
+
+message StreamRequest {}
+
+service Commander {
+  rpc CreateCommand(CommandParams) returns (Command) {}
+  rpc ListCommands(PagingInfo) returns (PagedCommands) {}
+  rpc CommandById(UUID) returns (Command) {}
+  rpc CommandStream(StreamRequest) returns (stream Command) {}
+
+  rpc ListEvents(PagingInfo) returns (PagedEvents) {}
+  rpc EventById(UUID) returns (Event) {}
+  rpc EventStream(StreamRequest) returns (stream Event) {}
+}

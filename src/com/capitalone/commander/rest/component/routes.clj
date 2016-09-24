@@ -38,10 +38,10 @@
   {:status 200 :body "healthy"})
 
 (defn build-routes
-  [endpoints doc]
-  (log/debug :fn ::build-routes :endpoints endpoints :doc doc)
+  [rest-endpoints doc]
+  (log/debug :fn ::build-routes :rest-endpoints rest-endpoints :doc doc)
   (s/with-fn-validation
-    (-> [[(conj endpoints
+    (-> [[(conj rest-endpoints
                 ["/health" {:get health-check}]
                 ["/swagger.json" ^:interceptors [(api/negotiate-response)]
                  {:get api/swagger-json}]
@@ -49,10 +49,10 @@
         route/expand-routes
         (doc/with-swagger doc))))
 
-(defrecord Routes [endpoints routes]
+(defrecord Routes [rest-endpoints routes]
   c/Lifecycle
   (start [this]
-    (assoc this :routes (build-routes (:routes endpoints) commander-doc)))
+    (assoc this :routes (build-routes (:routes rest-endpoints) commander-doc)))
   (stop  [this] (dissoc this :routes)))
 
 (defn construct-routes
