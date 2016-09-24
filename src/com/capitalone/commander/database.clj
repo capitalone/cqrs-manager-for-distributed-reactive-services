@@ -33,9 +33,12 @@
 
 (s/def ::CommonDataAccess (partial satisfies? CommonDataAccess))
 
-(defn unpack-data [c]
+(defn event-from-select [c]
   (cond-> c
+    (:action c) (update-in [:action] keyword)
     (:data c) (update-in [:data] fressian/read)))
+
+(def command-from-select event-from-select)
 
 (defn find-latest-partition-offset
   [database topic partition]
@@ -187,7 +190,7 @@
 (defn- event-for-insert
   [event]
   (-> event
-      (update-in [:action] str)
+      (update-in [:action] util/keyword->string)
       (update-in [:data] #(-> %
                               (fressian/write :footer? true)
                               util/buf->bytes))))
@@ -224,7 +227,7 @@
                            ["SELECT id, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = true ORDER BY timestamp ASC OFFSET ?"
                             offset])]
       (j/with-db-transaction [tx database {:read-only? true}]
-        {:commands (map unpack-data (j/query database commands-query))
+        {:commands (map command-from-select (j/query database commands-query))
          :offset   offset
          :limit    limit
          :total    (first (j/query database
@@ -234,7 +237,7 @@
     (some-> (j/query database
                      ["SELECT id, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = true AND id = ?" id])
             first
-            unpack-data))
+            command-from-select))
   (-insert-commands! [database commands]
     (j/insert-multi! database :commander
                      (map command-for-insert commands)
@@ -250,7 +253,7 @@
                          ["SELECT id, parent, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = false ORDER BY timestamp ASC OFFSET ?"
                           offset])]
       (j/with-db-transaction [tx database {:read-only? true}]
-        {:events (map unpack-data (j/query database events-query))
+        {:events (map event-from-select (j/query database events-query))
          :offset offset
          :limit  limit
          :total  (first (j/query database
@@ -260,7 +263,7 @@
     (some-> (j/query database
                      ["SELECT id, parent, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = false AND id = ?" id])
             first
-            unpack-data))
+            event-from-select))
   (-insert-events! [database events]
     (j/insert-multi! database :commander
                      (map event-for-insert events)
