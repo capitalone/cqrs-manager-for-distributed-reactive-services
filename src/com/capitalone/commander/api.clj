@@ -90,8 +90,8 @@
 
 (s/fdef list-commands
         :args (s/cat :api ::CommandService
-                     :offset (s/nilable (s/int-in 0 Long/MAX_VALUE))
-                     :limit (s/nilable (s/int-in 0 Long/MAX_VALUE)))
+                     :offset (s/? (s/nilable (s/int-in 0 Long/MAX_VALUE)))
+                     :limit (s/? (s/nilable (s/int-in 0 Long/MAX_VALUE))))
         :ret (s/keys :req-un [::commands ::commander/limit ::commander/offset ::total])
         :fn #(let [limit (-> % :args :limit)]
                (if (pos? limit)
@@ -134,8 +134,8 @@
 (s/def ::events (s/every ::commander/event))
 (s/fdef list-events
         :args (s/cat :api ::EventService
-                     :offset (s/nilable (s/int-in 0 Long/MAX_VALUE))
-                     :limit (s/nilable (s/int-in 0 Long/MAX_VALUE)))
+                     :offset (s/? (s/nilable (s/int-in 0 Long/MAX_VALUE)))
+                     :limit (s/? (s/nilable (s/int-in 0 Long/MAX_VALUE))))
         :ret (s/keys :req-un [::events ::commander/limit ::commander/offset ::total])
         :fn #(let [limit (-> % :args :limit)]
                (if (pos? limit)
