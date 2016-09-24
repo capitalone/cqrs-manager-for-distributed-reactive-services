@@ -33,6 +33,10 @@
 
 (s/def ::CommonDataAccess (partial satisfies? CommonDataAccess))
 
+(defn unpack-data [c]
+  (cond-> c
+    (:data c) (update-in [:data] fressian/read)))
+
 (defn find-latest-partition-offset
   [database topic partition]
   (log/debug ::find-latest-commands-offset [database topic partition])
@@ -79,9 +83,9 @@
                      :limit  (s/int-in 0 Long/MAX_VALUE))
         :ret (s/every ::commander/command)
         :fn #(let [limit (-> % :args :limit)]
-              (if (pos? limit)
-                (= (-> % :ret count) limit)
-                true)))
+               (if (pos? limit)
+                 (= (-> % :ret count) limit)
+                 true)))
 
 (defn fetch-command-by-id
   "Fetches and returns a single command from the given database
@@ -110,7 +114,7 @@
                      :command (s/or :single ::commander/command
                                     :collection (s/and sequential?
                                                        (s/every ::commander/command
-                                                          :kind vector?))))
+                                                                :kind vector?))))
         :ret boolean?)
 
 (defprotocol EventDataAccess
@@ -148,9 +152,9 @@
                      :limit  (s/int-in 0 Long/MAX_VALUE))
         :ret (s/every ::commander/event)
         :fn #(let [limit (-> % :args :limit)]
-              (if (pos? limit)
-                (= (-> % :ret count) limit)
-                true)))
+               (if (pos? limit)
+                 (= (-> % :ret count) limit)
+                 true)))
 
 (defn fetch-event-by-id
   "Fetches and returns a single event from the given database
@@ -220,15 +224,17 @@
                            ["SELECT id, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = true ORDER BY timestamp ASC OFFSET ?"
                             offset])]
       (j/with-db-transaction [tx database {:read-only? true}]
-        {:commands (j/query database commands-query)
+        {:commands (map unpack-data (j/query database commands-query))
          :offset   offset
          :limit    limit
          :total    (first (j/query database
                                    ["SELECT count(id) FROM commander WHERE command = true"]
                                    {:row-fn :count}))})))
   (-fetch-command-by-id [database id]
-    (first (j/query database
-                    ["SELECT id, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = true AND id = ?" id])))
+    (some-> (j/query database
+                     ["SELECT id, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = true AND id = ?" id])
+            first
+            unpack-data))
   (-insert-commands! [database commands]
     (j/insert-multi! database :commander
                      (map command-for-insert commands)
@@ -244,15 +250,17 @@
                          ["SELECT id, parent, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = false ORDER BY timestamp ASC OFFSET ?"
                           offset])]
       (j/with-db-transaction [tx database {:read-only? true}]
-        {:events (j/query database events-query)
+        {:events (map unpack-data (j/query database events-query))
          :offset offset
          :limit  limit
          :total  (first (j/query database
                                  ["SELECT count(id) FROM commander WHERE command = false"]
                                  {:row-fn :count}))})))
   (-fetch-event-by-id [database id]
-    (first (j/query database
-                    ["SELECT id, parent, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = false AND id = ?" id])))
+    (some-> (j/query database
+                     ["SELECT id, parent, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = false AND id = ?" id])
+            first
+            unpack-data))
   (-insert-events! [database events]
     (j/insert-multi! database :commander
                      (map event-for-insert events)
