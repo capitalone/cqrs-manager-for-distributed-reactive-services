@@ -72,8 +72,7 @@
 ;; TODO: hypermedia
 (defn display-command
   [c]
-  (cond-> c
-    (:action c) (update-in [:action] keyword)))
+  c)
 
 ;;; TODO: authorization
 (defhandler all-commands
