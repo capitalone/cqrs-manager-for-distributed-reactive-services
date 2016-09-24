@@ -14,7 +14,6 @@
 (ns com.capitalone.commander.rest.endpoint.commander
   (:require [clojure.core.async :as a]
             [clojure.set :as set]
-            [clojure.data.fressian :as fressian]
             [com.stuartsierra.component :as component]
             [clj-uuid :as uuid]
             [schema.core :as s]
@@ -70,17 +69,10 @@
 (s/defschema Event
   (assoc Command :parent s/Uuid))
 
-(defn safe-fressian-read
-  [o]
-  (try
-    (fressian/read o)
-    (catch Exception e o)))
-
 ;; TODO: hypermedia
 (defn display-command
   [c]
   (cond-> c
-    (:data c)   (update-in [:data] safe-fressian-read)
     (:action c) (update-in [:action] keyword)))
 
 ;;; TODO: authorization
