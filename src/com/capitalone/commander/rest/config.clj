@@ -19,6 +19,7 @@
 (def defaults
   {:http           {:port          3000
                     :resource-path "/public"}
+   :grpc           {:port 8980}
    :api            {:commands-topic  "commands"
                     :events-topic    "events"
                     :sync-timeout-ms 5000}
@@ -27,6 +28,7 @@
 
 (def environ
   {:http           {:port (some-> env ^String (:port) Integer.)}
+   :grpc           {:port (some-> env ^String (:grpc-port) Integer.)}
    :api            {:commands-topic  (:commands-topic env)
                     :events-topic    (:events-topic env)
                     :sync-timeout-ms (some-> env ^String (:sync-timeout-ms) Integer.)}

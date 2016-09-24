@@ -34,6 +34,12 @@
                  [cheshire "5.6.3"]
                  [hiccup "1.0.5"]
 
+                 ;; gRPC
+                 [com.google.protobuf/protobuf-java "3.0.2"]
+                 [io.grpc/grpc-netty "1.0.0"]
+                 [io.grpc/grpc-protobuf "1.0.0"]
+                 [io.grpc/grpc-stub "1.0.0"]
+
                  ;; Database
                  [org.clojure/java.jdbc "0.6.2-alpha3"]
                  [org.postgresql/postgresql "9.4.1210"]
@@ -53,28 +59,31 @@
                  [org.slf4j/jcl-over-slf4j "1.7.21"]
                  [org.slf4j/log4j-over-slf4j "1.7.21"]]
   :default {:file-pattern #"\.(clj|cljs|cljc)$"}
-  :target-path "target/%s/"
+  :java-source-paths ["generated/main/java" "generated/main/grpc"]
+  :javac-options     ["-target" "1.8" "-source" "1.8"]
   :profiles {:debug         {:debug      true
                              :injections [(prn (into {} (System/getProperties)))]}
              :dev           [:project/dev  :profiles/dev]
              :test          [:project/test :profiles/test]
-             :uberjar       {:aot          :all
+             :uberjar       {:target-path  "target/%s/"
+                             :aot          :all
+                             :omit-source  true
                              :uberjar-name "cmdr-standalone.jar"}
+             :repl          {:source-paths ["dev"]
+                             :repl-options {:init-ns user}}
              :profiles/dev  {}
              :profiles/test {}
-             :project/dev   {:dependencies [[reloaded.repl "0.2.2"]
-                                            [org.clojure/tools.namespace "0.2.11"]
-                                            [org.clojure/tools.nrepl "0.2.12"]
-                                            [eftest "0.1.1"]
-                                            [org.clojure/test.check "0.9.0"]]
-                             :plugins      [[lein-environ "1.0.2"]
-                                            [lein-auto "0.1.2"]]
-                             :source-paths ["dev"]
-                             :repl-options {:init-ns user}
-                             :env          {:database-uri     "jdbc:postgresql://localhost/commander?user=commander&password=commander"
-                                            :kafka-servers    "localhost:9092"
-                                            :indexer-group-id "dev-indexer"
-                                            :rest-group-id    "dev-rest"}}
+             :project/dev   {:dependencies      [[reloaded.repl "0.2.2"]
+                                                 [org.clojure/tools.namespace "0.2.11"]
+                                                 [org.clojure/tools.nrepl "0.2.12"]
+                                                 [eftest "0.1.1"]
+                                                 [org.clojure/test.check "0.9.0"]]
+                             :plugins           [[lein-environ "1.0.2"]
+                                                 [lein-auto "0.1.2"]]
+                             :env               {:database-uri     "jdbc:postgresql://localhost/commander?user=commander&password=commander"
+                                                 :kafka-servers    "localhost:9092"
+                                                 :indexer-group-id "dev-indexer"
+                                                 :rest-group-id    "dev-rest"}}
              :project/test  {:env {:database-uri     "jdbc:postgresql://localhost/commander?user=commander&password=commander"
                                    :kafka-servers    "localhost:9092"
                                    :indexer-group-id "dev-indexer"
