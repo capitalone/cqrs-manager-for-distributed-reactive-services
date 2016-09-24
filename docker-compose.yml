@@ -13,13 +13,13 @@
 version: '2'
 services:
   zookeeper:
-    image: wurstmeister/zookeeper
+    image: wurstmeister/zookeeper:3.4.6
     ports:
       - "2181:2181"
     volumes:
       - "./data/zookeeper:/opt/zookeeper-3.4.6/data"
   kafka:
-    image: wurstmeister/kafka:0.10.0.0
+    image: wurstmeister/kafka:0.10.0.1
     environment:
       KAFKA_ADVERTISED_PORT: 9092
       KAFKA_ADVERTISED_HOST_NAME: localhost
