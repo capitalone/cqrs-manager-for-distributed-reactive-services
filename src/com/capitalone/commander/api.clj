@@ -135,10 +135,11 @@
      :offset    offset}))
 
 (defn commands-ch
-  "Returns a core.async channel (ch if given) that will convey all
-  commands arriving from the time of the call onward."
+  "Returns a core.async channel (ch if given, a sliding-buffer channel
+  of size 10 otherwise) that will convey all commands arriving from
+  the time of the call onward."
   ([api]
-   (commands-ch api (a/chan 1)))
+   (commands-ch api (a/chan (a/sliding-buffer 10))))
   ([api ch]
    (log/info ::commands-ch [api ch])
    (-commands-ch api ch)
@@ -205,10 +206,11 @@
      :offset    offset}))
 
 (defn events-ch
-  "Returns a core.async channel (ch if given) that will convey all
-  events arriving from the time of the call onward."
+  "Returns a core.async channel (ch if given, a sliding-buffer channel
+  of size 10 otherwise) that will convey all events arriving from
+  the time of the call onward."
   ([api]
-   (events-ch api (a/chan 1)))
+   (events-ch api (a/chan (a/sliding-buffer 10))))
   ([api ch]
    (log/info ::events-ch [api ch])
    (-events-ch api ch)
