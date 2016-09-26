@@ -252,8 +252,9 @@
                          (.setValue "8f599a70-821f-11e6-8fff-2063287b86c9")
                          .build))
 
-  (.eventStream client (com.capitalone.commander.grpc.CommanderProtos$StreamRequest/newBuilder))
-
-
+  (def event-stream
+    (.eventStream client
+                  (.build
+                    (com.capitalone.commander.grpc.CommanderProtos$StreamRequest/newBuilder))))
 
   )
