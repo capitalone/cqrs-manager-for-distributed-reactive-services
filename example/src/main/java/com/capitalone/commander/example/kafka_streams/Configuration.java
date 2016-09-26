@@ -24,36 +24,9 @@ import java.util.Map;
 public class Configuration extends io.dropwizard.Configuration {
     private StreamsConfigFactory streamsConfigFactory = new StreamsConfigFactory();
 
-    private String applicationId;
-    private String bootstrapServers;
-    private String zookeeperConnect;
     private String commandsTopic;
     private String eventsTopic;
     private String customersTopic;
-
-    public String getApplicationId() {
-        return applicationId;
-    }
-
-    public void setApplicationId(String applicationId) {
-        this.applicationId = applicationId;
-    }
-
-    public String getBootstrapServers() {
-        return bootstrapServers;
-    }
-
-    public void setBootstrapServers(String bootstrapServers) {
-        this.bootstrapServers = bootstrapServers;
-    }
-
-    public String getZookeeperConnect() {
-        return zookeeperConnect;
-    }
-
-    public void setZookeeperConnect(String zookeeperConnect) {
-        this.zookeeperConnect = zookeeperConnect;
-    }
 
     public String getCommandsTopic() {
         return commandsTopic;
@@ -89,19 +62,4 @@ public class Configuration extends io.dropwizard.Configuration {
         return streamsConfigFactory;
     }
 
-    public StreamsConfig build(String applicationIdConfig,
-                               String bootstrapServersConfig,
-                               String zookeeperConnectConfig,
-                               String commandsTopic,
-                               String eventsTopic,
-                               String customersTopic) {
-        this.commandsTopic = commandsTopic;
-        this.eventsTopic = eventsTopic;
-        this.customersTopic = customersTopic;
-        Map<String, Object> props = new HashMap<>();
-        props.put(StreamsConfig.APPLICATION_ID_CONFIG, applicationIdConfig);
-        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServersConfig);
-        props.put(StreamsConfig.ZOOKEEPER_CONNECT_CONFIG, zookeeperConnectConfig);
-        return new StreamsConfig(props);
-    }
 }

@@ -16,8 +16,34 @@
 package com.capitalone.commander.example.kafka_streams;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableMap;
+import org.apache.kafka.streams.StreamsConfig;
 
 public class StreamsConfigFactory {
+    private String applicationId;
+    private String bootstrapServers;
+    private String zookeeperConnect;
+
+    @JsonProperty
+    public String getApplicationId() {
+        return applicationId;
+    }
+
+    @JsonProperty
+    public void setApplicationId(String applicationId) {
+        this.applicationId = applicationId;
+    }
+
+    @JsonProperty
+    public String getZookeeperConnect() {
+        return zookeeperConnect;
+    }
+
+    @JsonProperty
+    public void setZookeeperConnect(String zookeeperConnect) {
+        this.zookeeperConnect = zookeeperConnect;
+    }
+
     @JsonProperty
     public String getBootstrapServers() {
         return bootstrapServers;
@@ -28,24 +54,11 @@ public class StreamsConfigFactory {
         this.bootstrapServers = bootstrapServers;
     }
 
-    @JsonProperty
-    public int getRequestTimeoutMs() {
-        return requestTimeoutMs;
+    public StreamsConfig build() {
+        return new StreamsConfig(ImmutableMap.of(
+                StreamsConfig.APPLICATION_ID_CONFIG, getApplicationId(),
+                StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, getBootstrapServers(),
+                StreamsConfig.ZOOKEEPER_CONNECT_CONFIG, getZookeeperConnect()
+        ));
     }
-
-    @JsonProperty
-    public void setRequestTimeoutMs(int requestTimeoutMs) {
-        this.requestTimeoutMs = requestTimeoutMs;
-    }
-
-    @JsonProperty
-    public String getClientId() {
-        return clientId;
-    }
-
-    @JsonProperty
-    public void setClientId(String clientId) {
-        this.clientId = clientId;
-    }
-
 }
