@@ -21,7 +21,7 @@ import org.apache.kafka.streams.StreamsConfig;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Configuration extends io.dropwizard.Configuration {
+public class ExampleConfiguration extends io.dropwizard.Configuration {
     private StreamsConfigFactory streamsConfigFactory = new StreamsConfigFactory();
 
     private String commandsTopic;
@@ -53,12 +53,12 @@ public class Configuration extends io.dropwizard.Configuration {
     }
 
     @JsonProperty("kafkaStreams")
-    public void setDataSourceFactory(StreamsConfigFactory factory) {
+    public void setStreamsConfigFactory(StreamsConfigFactory factory) {
         this.streamsConfigFactory = factory;
     }
 
     @JsonProperty("kafkaStreams")
-    public StreamsConfigFactory getDataSourceFactory() {
+    public StreamsConfigFactory getStreamsConfigFactory() {
         return streamsConfigFactory;
     }
 

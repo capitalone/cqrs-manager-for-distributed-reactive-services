@@ -15,36 +15,40 @@
 
 package com.capitalone.commander.example.kafka_streams;
 
-import java.util.Arrays;
-import java.util.List;
+import com.codahale.metrics.annotation.Timed;
+
+import javax.validation.constraints.NotNull;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 import java.util.UUID;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 
-import javax.annotation.Resource;
+@Path("/customers")
+@Produces(MediaType.APPLICATION_JSON)
+public class CustomerResource {
+    @NotNull
+    private final CustomerStore customerStore;
 
-@RestController
-public class CustomerController {
-    @Resource
-    private CustomerStore customerStore;
+    public CustomerResource(CustomerStore customerStore) {
+        this.customerStore = customerStore;
+    }
 
     public CustomerStore getCustomerStore() {
         return customerStore;
     }
 
-    public void setCustomerStore(CustomerStore customerStore) {
-        this.customerStore = customerStore;
-    }
-
-    @RequestMapping("/customers")
-    public List<Customer> customers() {
+    @GET
+    @Timed
+    public Iterable<Customer> customers() {
         return customerStore.getCustomers();
     }
 
-    @RequestMapping("/customers/:id")
-    public Customer customer(@RequestParam(value="id") String idStr) {
-        UUID id = UUID.fromString(idStr);
+    @GET
+    @Timed
+    @Path("{id}")
+    public Customer customer(@PathParam("id") UUID id) {
         return customerStore.getCustomer(id);
     }
 }
