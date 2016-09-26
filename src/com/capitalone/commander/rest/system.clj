@@ -15,9 +15,10 @@
   (:require [com.stuartsierra.component :as component]
             [meta-merge.core :refer [meta-merge]]
             [io.pedestal.log :as log]
-            [com.capitalone.commander.rest.endpoint.commander :refer [construct-commander-endpoints]]
+            [com.capitalone.commander.rest.endpoint.commander :refer [construct-commander-rest-endpoints]]
             [com.capitalone.commander.rest.component.routes :refer [construct-routes]]
             [com.capitalone.commander.rest.component.pedestal :refer [construct-pedestal-server]]
+            [com.capitalone.commander.grpc :refer [construct-grpc-server]]
             [com.capitalone.commander.database :refer [construct-jdbc-db]]
             [com.capitalone.commander.kafka :refer [construct-producer construct-consumer]]
             [com.capitalone.commander.api :refer [construct-commander-api]]))
@@ -33,15 +34,17 @@
   (let [config (meta-merge config base-config)]
     (log/info :msg "Creating system" :config config)
     (-> (component/system-map
+         :rest-endpoints (construct-commander-rest-endpoints)
+         :grpc-server    (construct-grpc-server (:grpc config))
          :http           (construct-pedestal-server (:http config))
-         :endpoints      (construct-commander-endpoints)
          :routes         (construct-routes)
          :database       (construct-jdbc-db  (:database config))
          :kafka-consumer (construct-consumer (:kafka-consumer config))
          :kafka-producer (construct-producer (:kafka-producer config))
          :api            (construct-commander-api (:api config)))
         (component/system-using
-         {:http      [:routes]
-          :routes    [:endpoints]
-          :endpoints [:api]
-          :api       [:kafka-producer :kafka-consumer :database]}))))
+         {:http           [:routes]
+          :routes         [:rest-endpoints]
+          :rest-endpoints [:api]
+          :grpc-server    [:api]
+          :api            [:kafka-producer :kafka-consumer :database]}))))

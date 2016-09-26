@@ -14,7 +14,6 @@
 (ns com.capitalone.commander.rest.endpoint.commander
   (:require [clojure.core.async :as a]
             [clojure.set :as set]
-            [clojure.data.fressian :as fressian]
             [com.stuartsierra.component :as component]
             [clj-uuid :as uuid]
             [schema.core :as s]
@@ -70,18 +69,10 @@
 (s/defschema Event
   (assoc Command :parent s/Uuid))
 
-(defn safe-fressian-read
-  [o]
-  (try
-    (fressian/read o)
-    (catch Exception e o)))
-
 ;; TODO: hypermedia
 (defn display-command
   [c]
-  (cond-> c
-    (:data c)   (update-in [:data] safe-fressian-read)
-    (:action c) (update-in [:action] keyword)))
+  c)
 
 ;;; TODO: authorization
 (defhandler all-commands
@@ -92,7 +83,7 @@
    :responses  {200 {:body {:commands [Command]
                             :limit    s/Int
                             :offset   s/Int
-                            :count    s/Int}}}}
+                            :total    s/Int}}}}
   [{:keys [component] :as request}]
   (let [limit           (get-in request [:query-params :limit])
         offset          (get-in request [:query-params :offset])
@@ -118,7 +109,7 @@
    :responses  {200 {:body {:events [Event]
                             :limit  s/Int
                             :offset s/Int
-                            :count  s/Int}}}}
+                            :total  s/Int}}}}
   [{:keys [component] :as request}]
   (let [limit         (get-in request [:query-params :limit])
         offset        (get-in request [:query-params :offset])
@@ -250,37 +241,35 @@
                          :data (some-> event :value json/generate-string)})))))
 
 (defn pipeline-to-sse
-  [event-ch ctx event-type mult]
-  (let [ch            (a/chan 1)
-        user-id       (get-in ctx [:request :headers "user-id"])
+  [ctx event-type src-ch dest-ch]
+  (let [user-id       (get-in ctx [:request :headers "user-id"])
         last-event-id (get-in ctx [:request :headers "last-event-id"])
 
         ;; TODO: based on last-event-id (if present), find the next event id
         start-value   0]
-    (log/debug ::pipeline-to-sse {:event-ch      event-ch
+    (log/debug ::pipeline-to-sse {:src-ch        src-ch
+                                  :dest-ch       dest-ch
                                   :event-type    event-type
-                                  :mult          mult
                                   :user-id       user-id
                                   :last-event-id last-event-id
                                   :start-value   start-value})
-    (a/tap mult ch)
-    (a/pipeline 10 event-ch (sse-xf event-type user-id) ch)))
+    (a/pipeline 10 dest-ch (sse-xf event-type user-id) src-ch)))
 
 (defn commands-stream-ready
   "Starts sending user-filtered command updates to client."
   [event-ch ctx]
-  (pipeline-to-sse event-ch
-                   ctx
+  (pipeline-to-sse ctx
                    :command
-                   (get-in ctx [:request :component :commands-mult])))
+                   (api/commands-ch (get-in ctx [:request :component :api]))
+                   event-ch))
 
 (defn events-stream-ready
   "Starts sending user-filtered result updates to client."
   [event-ch ctx]
-  (pipeline-to-sse event-ch
-                   ctx
+  (pipeline-to-sse ctx
                    :result
-                   (get-in ctx [:request :component :events-mult])))
+                   (api/events-ch (get-in ctx [:request :component :api]))
+                   event-ch))
 
 (defn build-routes
   [component]
@@ -317,6 +306,6 @@
   (start [this] (assoc this :routes (build-routes this)))
   (stop [this] (dissoc this :routes)))
 
-(defn construct-commander-endpoints
+(defn construct-commander-rest-endpoints
   []
   (map->Endpoints {}))

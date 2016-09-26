@@ -15,11 +15,14 @@
   (:require [clojure.spec :as s]
             [clojure.core.async :as a]
             [com.stuartsierra.component :as c]
+            [io.pedestal.log :as log]
             [clj-uuid :as uuid]
             [com.capitalone.commander :as commander]
             [com.capitalone.commander.database :as d]
             [com.capitalone.commander.kafka :as k])
   (:import [org.apache.kafka.clients.consumer Consumer]))
+
+(set! *warn-on-reflection* true)
 
 (defprotocol CommandService
   (-create-command [this command-params]
@@ -31,11 +34,16 @@
     value is a vector containing the completion event id if
     successful.  If ")
   (-list-commands [this offset limit]
-    "Returns `limit` indexed commands, starting at `offset`.  If limit
-    is 0, returns all indexed commands starting with offset.")
+    "Returns a map of :commands, :limit, :offset, and :total,
+    where :commands is `limit` indexed commands, starting at `offset`.
+    If limit is 0, returns all indexed commands starting with
+    offset. :total is the total count of all commands.")
   (-get-command-by-id [this id]
     "Returns the indexed command with the given id, or nil if none
-    found."))
+    found.")
+  (-commands-ch [this ch]
+    "Returns ch, the given core.async channel that will convey all
+    commands (from time of call onward)."))
 
 (defprotocol CommandValidator
   (-validate-command-params [this command-params]
@@ -43,11 +51,16 @@
 
 (defprotocol EventService
   (-list-events [this offset limit]
-    "Returns `limit` indexed events, starting at `offset`.  If limit
-    is 0, returns all indexed events starting with offset.")
+    "Returns a map of :events, :limit, :offset, and :total,
+    where :events is `limit` indexed events, starting at `offset`.
+    If limit is 0, returns all indexed events starting with
+    offset. :total is the total count of all events.")
   (-get-event-by-id [this id]
     "Returns the indexed event with the given id, or nil if none
-    found."))
+    found.")
+  (-events-ch [this ch]
+    "Returns ch, the given core.async channel that will convey all
+    events (from time of call onward)."))
 
 (defn create-command
   "Creates a command by recording to the Log. If sync? is false (the
@@ -58,6 +71,7 @@
   ([api command-params]
    (create-command api command-params false))
   ([api command-params sync?]
+   (log/info ::create-command [api command-params sync?])
    (if sync?
      (-create-command-sync api command-params (:sync-timeout-ms api))
      (-create-command api command-params))))
@@ -73,33 +87,63 @@
                    #(= (-> % :ret :data)   (-> % :args :command-params :data))))
 
 (defn list-commands
-  "Returns a vector containing `limit` indexed commands, starting at `offset`,
-  (which defaults to 0). If limit is 0 (the default), returns all
-  indexed commands starting with offset."
+  "Returns a map of :commands, :limit, :offset, and :total,
+   where :commands is `limit` indexed commands, starting at `offset`.
+   If limit is 0, returns all indexed commands starting with
+   offset. :total is the total count of all commands."
   ([api] (list-commands api 0))
   ([api offset] (list-commands api offset 0))
-  ([api offset limit] (-list-commands api (or offset 0) (or limit 0))))
+  ([api offset limit]
+   (log/info ::list-commands [api offset limit])
+   (-list-commands api (or offset 0) (or limit 0))))
+
+(s/def ::commands (s/every ::commander/command))
+(s/def ::total (s/int-in 0 Long/MAX_VALUE))
 
 (s/fdef list-commands
         :args (s/cat :api ::CommandService
-                     :offset (s/nilable (s/int-in 0 Long/MAX_VALUE))
-                     :limit (s/nilable (s/int-in 0 Long/MAX_VALUE)))
-        :ret (s/every ::commander/command)
+                     :offset (s/? (s/nilable (s/int-in 0 Long/MAX_VALUE)))
+                     :limit (s/? (s/nilable (s/int-in 0 Long/MAX_VALUE))))
+        :ret (s/keys :req-un [::commands ::commander/limit ::commander/offset ::total])
         :fn #(let [limit (-> % :args :limit)]
-              (if (pos? limit)
-                (= (-> % :ret count) limit)
-                true)))
+               (if (pos? limit)
+                 (= (-> % :ret count) limit)
+                 true)))
 
 (defn get-command-by-id
   "Returns the indexed command with the given id, or nil if none
   found."
   [api id]
+  (log/info ::get-command-by-id [api id])
   (-get-command-by-id api id))
 
 (s/fdef get-command-by-id
         :args (s/cat :api ::CommandService
                      :id  ::commander/id)
         :ret ::commander/command)
+
+(defn command-map
+  [{:keys [key value topic partition offset timestamp] :as command}]
+  (log/debug ::command-map [command])
+  (let [{:keys [action data]} value]
+    {:id        key
+     :action    action
+     :data      data
+     :timestamp timestamp
+     :topic     topic
+     :partition partition
+     :offset    offset}))
+
+(defn commands-ch
+  "Returns a core.async channel (ch if given, a sliding-buffer channel
+  of size 10 otherwise) that will convey all commands arriving from
+  the time of the call onward."
+  ([api]
+   (commands-ch api (a/chan (a/sliding-buffer 10))))
+  ([api ch]
+   (log/info ::commands-ch [api ch])
+   (-commands-ch api ch)
+   ch))
 
 (defn validate-command-params
   "Returns true if valid, a map of errors otherwise."
@@ -115,33 +159,62 @@
 (s/def ::EventService (partial satisfies? EventService))
 
 (defn list-events
-  "Returns a vector containing `limit` indexed events, starting at `offset`,
-  (which defaults to 0). If limit is 0 (the default), returns all
-  indexed events starting with offset."
+  "Returns a map of :events, :limit, :offset, and :total,
+   where :events is `limit` indexed events, starting at `offset`.
+   If limit is 0, returns all indexed events starting with
+   offset. :total is the total count of all events."
   ([api] (list-events api 0))
   ([api offset] (list-events api offset 0))
-  ([api offset limit] (-list-events api (or offset 0) (or limit 0))))
+  ([api offset limit]
+   (log/info ::list-events [api offset limit])
+   (-list-events api (or offset 0) (or limit 0))))
 
+(s/def ::events (s/every ::commander/event))
 (s/fdef list-events
         :args (s/cat :api ::EventService
-                     :offset (s/nilable (s/int-in 0 Long/MAX_VALUE))
-                     :limit (s/nilable (s/int-in 0 Long/MAX_VALUE)))
-        :ret (s/every ::commander/event)
+                     :offset (s/? (s/nilable (s/int-in 0 Long/MAX_VALUE)))
+                     :limit (s/? (s/nilable (s/int-in 0 Long/MAX_VALUE))))
+        :ret (s/keys :req-un [::events ::commander/limit ::commander/offset ::total])
         :fn #(let [limit (-> % :args :limit)]
-              (if (pos? limit)
-                (= (-> % :ret count) limit)
-                true)))
+               (if (pos? limit)
+                 (= (-> % :ret count) limit)
+                 true)))
 
 (defn get-event-by-id
   "Returns the indexed event with the given id, or nil if none
   found."
   [api id]
+  (log/info ::get-event-by-id [api id])
   (-get-event-by-id api id))
 
 (s/fdef get-event-by-id
         :args (s/cat :api ::EventService
                      :id  ::commander/id)
         :ret ::commander/event)
+
+(defn event-map
+  [{:keys [key value topic partition offset timestamp] :as event}]
+  (log/debug ::event-map [event])
+  (let [{:keys [action data parent]} value]
+    {:id        key
+     :parent    parent
+     :action    action
+     :data      data
+     :timestamp timestamp
+     :topic     topic
+     :partition partition
+     :offset    offset}))
+
+(defn events-ch
+  "Returns a core.async channel (ch if given, a sliding-buffer channel
+  of size 10 otherwise) that will convey all events arriving from
+  the time of the call onward."
+  ([api]
+   (events-ch api (a/chan (a/sliding-buffer 10))))
+  ([api ch]
+   (log/info ::events-ch [api ch])
+   (-events-ch api ch)
+   ch))
 
 (defn- command-record
   [topic id command]
@@ -207,6 +280,11 @@
     (d/fetch-commands database offset limit))
   (-get-command-by-id [this id]
     (d/fetch-command-by-id database id))
+  (-commands-ch [this ch]
+    (let [int (a/chan 1 (map command-map))]
+      (a/pipe int ch)
+      (a/tap commands-mult int)
+      ch))
 
   CommandValidator
 ;;; TODO
@@ -217,6 +295,11 @@
     (d/fetch-events database offset limit))
   (-get-event-by-id [this id]
     (d/fetch-event-by-id database id))
+  (-events-ch [this ch]
+    (let [int (a/chan 1 (map event-map))]
+      (a/pipe int ch)
+      (a/tap events-mult int)
+      ch))
 
   c/Lifecycle
   (start [this]

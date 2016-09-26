@@ -33,6 +33,13 @@
 
 (s/def ::CommonDataAccess (partial satisfies? CommonDataAccess))
 
+(defn event-from-select [c]
+  (cond-> c
+    (:action c) (update-in [:action] keyword)
+    (:data c) (update-in [:data] fressian/read)))
+
+(def command-from-select event-from-select)
+
 (defn find-latest-partition-offset
   [database topic partition]
   (log/debug ::find-latest-commands-offset [database topic partition])
@@ -50,7 +57,7 @@
       - :commands a vector of command maps
       - :limit the limit passed to the query
       - :offset the offset passed to the query
-      - :count the total count of commands")
+      - :total the total count of commands")
   (-fetch-command-by-id [database id]
     "Fetches and returns a single command from the given database component, identified by its UUID.")
   (-insert-commands! [database commands]
@@ -64,7 +71,7 @@
     - :commands a vector of command maps
     - :limit the limit passed to the query
     - :offset the offset passed to the query
-    - :count the total count of commands"
+    - :total the total count of commands"
   ([database]
    (fetch-commands database 0 0))
   ([database limit offset]
@@ -79,9 +86,9 @@
                      :limit  (s/int-in 0 Long/MAX_VALUE))
         :ret (s/every ::commander/command)
         :fn #(let [limit (-> % :args :limit)]
-              (if (pos? limit)
-                (= (-> % :ret count) limit)
-                true)))
+               (if (pos? limit)
+                 (= (-> % :ret count) limit)
+                 true)))
 
 (defn fetch-command-by-id
   "Fetches and returns a single command from the given database
@@ -110,7 +117,7 @@
                      :command (s/or :single ::commander/command
                                     :collection (s/and sequential?
                                                        (s/every ::commander/command
-                                                          :kind vector?))))
+                                                                :kind vector?))))
         :ret boolean?)
 
 (defprotocol EventDataAccess
@@ -119,7 +126,7 @@
       - :events a vector of event maps
       - :limit the limit passed to the query
       - :offset the offset passed to the query
-      - :count the total count of events")
+      - :total the total count of events")
   (-fetch-event-by-id [database id]
     "Fetches and returns a single event from the given database component, identified by its UUID.")
   (-insert-events! [database events]
@@ -133,7 +140,7 @@
     - :events a vector of event maps
     - :limit the limit passed to the query
     - :offset the offset passed to the query
-    - :count the total count of events"
+    - :total the total count of events"
   ([database]
    (fetch-events database nil nil))
   ([database limit offset]
@@ -148,9 +155,9 @@
                      :limit  (s/int-in 0 Long/MAX_VALUE))
         :ret (s/every ::commander/event)
         :fn #(let [limit (-> % :args :limit)]
-              (if (pos? limit)
-                (= (-> % :ret count) limit)
-                true)))
+               (if (pos? limit)
+                 (= (-> % :ret count) limit)
+                 true)))
 
 (defn fetch-event-by-id
   "Fetches and returns a single event from the given database
@@ -183,7 +190,7 @@
 (defn- event-for-insert
   [event]
   (-> event
-      (update-in [:action] str)
+      (update-in [:action] util/keyword->string)
       (update-in [:data] #(-> %
                               (fressian/write :footer? true)
                               util/buf->bytes))))
@@ -220,15 +227,17 @@
                            ["SELECT id, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = true ORDER BY timestamp ASC OFFSET ?"
                             offset])]
       (j/with-db-transaction [tx database {:read-only? true}]
-        {:commands (j/query database commands-query)
+        {:commands (map command-from-select (j/query database commands-query))
          :offset   offset
          :limit    limit
-         :count    (first (j/query database
+         :total    (first (j/query database
                                    ["SELECT count(id) FROM commander WHERE command = true"]
                                    {:row-fn :count}))})))
   (-fetch-command-by-id [database id]
-    (first (j/query database
-                    ["SELECT id, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = true AND id = ?" id])))
+    (some-> (j/query database
+                     ["SELECT id, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = true AND id = ?" id])
+            first
+            command-from-select))
   (-insert-commands! [database commands]
     (j/insert-multi! database :commander
                      (map command-for-insert commands)
@@ -244,15 +253,17 @@
                          ["SELECT id, parent, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = false ORDER BY timestamp ASC OFFSET ?"
                           offset])]
       (j/with-db-transaction [tx database {:read-only? true}]
-        {:events (j/query database events-query)
+        {:events (map event-from-select (j/query database events-query))
          :offset offset
          :limit  limit
-         :count  (first (j/query database
+         :total  (first (j/query database
                                  ["SELECT count(id) FROM commander WHERE command = false"]
                                  {:row-fn :count}))})))
   (-fetch-event-by-id [database id]
-    (first (j/query database
-                    ["SELECT id, parent, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = false AND id = ?" id])))
+    (some-> (j/query database
+                     ["SELECT id, parent, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = false AND id = ?" id])
+            first
+            event-from-select))
   (-insert-events! [database events]
     (j/insert-multi! database :commander
                      (map event-for-insert events)

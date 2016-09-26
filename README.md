@@ -2,8 +2,8 @@
 
 CQRS Manager for Distributed Reactive Services (herein abbreviated
 CMDR), is a reference implementation for the key component in a
-specific [architecture](./architecture.png) for building distributed
-information services following a
+specific [architecture](./doc/architecture.png) for building
+distributed information services following a
 [Log-centric REST+CQRS+ES](https://speakerdeck.com/bobbycalderwood/commander-better-distributed-applications-through-cqrs-event-sourcing-and-immutable-logs)
 design.
 
@@ -22,8 +22,8 @@ Additionally, CMDR indexes all Commands and Events from their respective Kafka t
 **IMPORTANT!** This is alpha-quality software, meant mostly to
 demonstrate the
 [Log-centric REST+CQRS+ES](https://speakerdeck.com/bobbycalderwood/commander-better-distributed-applications-through-cqrs-event-sourcing-and-immutable-logs)
-[architecture](./architecture.png) described in the linked talks, and
-to facilitate learning and discussion.
+[architecture](./doc/architecture.png) described in the linked talks,
+and to facilitate learning and discussion.
 
 As this implementation reaches maturity, and becomes suited for
 production-use, this note will be removed from the README.
@@ -35,11 +35,11 @@ actions/writes, but it's totally ignorant of your business logic and
 domain. You'll need to build microservices that implement your
 business logic, and read-only REST endpoints to expose the resulting
 data.  You'll end up with a system architecture that looks
-[like this](./architecture.png), and has
+[like this](./doc/architecture.png), and has
 [many benefits](./doc/rationale.md).
 
-This README will help you get CMDR running, but doesn't tell you
-how to integrate with it or why you might want to.  See the
+This README will help you get CMDR running, but doesn't tell you how
+to integrate with it or why you might want to.  See the
 [rationale](./doc/rationale.md) for why you'd use CMDR, and
 [the contract documentation](./doc/using.md) for details about how to
 integrate with CMDR.
@@ -60,8 +60,8 @@ database.
 
 ### Supporting Services
 
-Running the supporting services (Kafka, Zookeeper, PostgreSQL) via
-`docker-compose` is the easiset way to get started.  However, if you
+Running the supporting services (Kafka, ZooKeeper, PostgreSQL) via
+`docker-compose` is the easiest way to get started.  However, if you
 want to run the supporting services locally/manually, you can use a
 package manager to install the services.
 
@@ -93,11 +93,11 @@ the supporting services.
 
 ##### Install
 
-###### Kafka and Zookeeper
+###### Kafka and ZooKeeper
 
-Kafka uses [Apache Zookeeper](https://zookeeper.apache.org/) to maintain
+Kafka uses [Apache ZooKeeper](https://zookeeper.apache.org/) to maintain
 runtime state and configuration consistently across the cluster.
-You'll need to install both Kafka and Zookeeper.
+You'll need to install both Kafka and ZooKeeper.
 
 ``` sh
 $ brew update
@@ -114,7 +114,7 @@ $ brew install postgresql
 
 ##### Running
 
-###### Kafka and Zookeeper
+###### Kafka and ZooKeeper
 
 In one shell:
 
@@ -154,8 +154,7 @@ In the third shell:
 $ lein repl
 ```
 
-Connect an [nrepl](https://github.com/clojure/tools.nrepl) client
-(perhaps in your favorite editor, or else type directly into the REPL
+Connect an [nrepl](https://github.com/clojure/tools.nrepl) client -- perhaps in your favorite editor, or else type directly into the REPL
 session in your shell:
 
 ``` clojure
@@ -173,7 +172,7 @@ environment.
 
 #### Running in development
 
-At the clojure REPL, you first need to run database migrations.
+At the Clojure REPL, you first need to run database migrations.
 
 ``` clojure
 (migrate-database)
@@ -242,7 +241,7 @@ $ java -jar target/uberjar/cmdr-standalone.jar -m com.capitalone.commander.rest
 
 ### Docker
 
-The docker image is based on the
+The Docker image is based on the
 [Alpine Linux version](https://github.com/Quantisan/docker-clojure/blob/534102a7ee7e6f4825e86a648a52c44cc25eb39d/alpine/Dockerfile)
 of the official
 [Clojure repository on Docker Hub](https://hub.docker.com/_/clojure/)

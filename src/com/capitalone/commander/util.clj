@@ -19,6 +19,15 @@
 
 (set! *warn-on-reflection* true)
 
+(defn keyword->string
+  [kw]
+  (let [sb (StringBuffer.)]
+    (when-let [ns (namespace kw)]
+      (.append sb ns)
+      (.append sb "/"))
+    (.append sb (name kw))
+    (str sb)))
+
 ;; HT: https://github.com/ztellman/byte-streams
 (defn buf->bytes
   [^ByteBuffer buf]
