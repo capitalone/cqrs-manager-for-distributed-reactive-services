@@ -89,7 +89,7 @@
         offset          (get-in request [:query-params :offset])
         commands-result (-> component
                             :api
-                            (api/list-commands limit offset)
+                            (api/list-commands offset limit)
                             (update-in [:commands] #(mapv display-command %)))
         sync            (get-in request [:query-params :sync])
 
@@ -115,7 +115,7 @@
         offset        (get-in request [:query-params :offset])
         events-result (-> component
                           :api
-                          (api/list-events limit offset)
+                          (api/list-events offset limit)
                           (update-in [:events] #(mapv display-command %)))
         sync          (get-in request [:query-params :sync])
 
