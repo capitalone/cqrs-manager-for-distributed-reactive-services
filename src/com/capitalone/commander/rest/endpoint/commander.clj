@@ -28,7 +28,6 @@
              [core :as papi]
              [helpers :refer [defhandler]]]
             [ring.util.response :as ring-resp]
-            [com.capitalone.commander.schema :as schema]
             [com.capitalone.commander.api :as api]
             [com.capitalone.commander.rest.hiccup :as h]))
 
@@ -48,12 +47,16 @@
    (s/optional-key :system) s/Uuid})
 
 ;; TODO: use api/validate-command-params
+(def action->schema
+  (constantly {s/Keyword s/Any}))
+
+;; TODO: use api/validate-command-params
 (defn validate-body-params
   "Returns truthy if given parsed body is a valid command."
   [body]
   (or (s/check CommandParams body)
       (let [{:keys [action data]} body
-            schema (schema/action->schema action)]
+            schema (action->schema action)]
         (s/check schema data))))
 
 (s/defschema Command
