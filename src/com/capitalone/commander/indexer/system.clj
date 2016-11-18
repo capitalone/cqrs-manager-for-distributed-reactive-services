@@ -16,7 +16,7 @@
             [meta-merge.core :refer [meta-merge]]
             [io.pedestal.log :as log]
             [com.capitalone.commander.database :refer [construct-jdbc-db]]
-            [com.capitalone.commander.kafka :refer [construct-consumer]]
+            [com.capitalone.commander.event-log.kafka :refer [construct-consumer]]
             [com.capitalone.commander.indexer.component.indexer :refer [construct-indexer]]))
 
 (set! *warn-on-reflection* true)

@@ -18,7 +18,7 @@
             [clojure.java.jdbc :as j]
             [com.capitalone.commander.api :as api]
             [com.capitalone.commander.database :as d]
-            [com.capitalone.commander.kafka :as k])
+            [com.capitalone.commander.event-log.kafka :as k])
   (:import [org.apache.kafka.clients.consumer Consumer ConsumerRebalanceListener]
            [org.apache.kafka.common TopicPartition]))
 

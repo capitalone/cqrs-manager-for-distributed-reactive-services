@@ -19,7 +19,7 @@
             [clj-uuid :as uuid]
             [com.capitalone.commander :as commander]
             [com.capitalone.commander.database :as d]
-            [com.capitalone.commander.kafka :as k])
+            [com.capitalone.commander.event-log.kafka :as k])
   (:import [org.apache.kafka.clients.consumer Consumer]))
 
 (set! *warn-on-reflection* true)
