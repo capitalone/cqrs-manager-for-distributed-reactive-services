@@ -13,11 +13,38 @@
 
 (ns com.capitalone.commander.util
   (:require [com.stuartsierra.component :as component]
-            [io.pedestal.log :as log]
-            [com.capitalone.clojure.runtime :as runtime])
+            [io.pedestal.log :as log])
   (:import [java.nio ByteBuffer]))
 
 (set! *warn-on-reflection* true)
+
+(def ^:private shutdown-hooks (atom {}))
+
+(defonce ^:private init-shutdown-hook
+  (delay (.addShutdownHook (Runtime/getRuntime)
+                           (Thread.
+                            #(doseq [f (vals @shutdown-hooks)]
+                               (f))))))
+
+(defn add-shutdown-hook! [k f]
+  @init-shutdown-hook
+  (swap! shutdown-hooks assoc k f))
+
+(defn remove-shutdown-hook! [k]
+  (swap! shutdown-hooks dissoc k))
+
+(defn set-default-uncaught-exception-handler!
+  "Adds a exception handler, which is a 2-arity function of thread
+  name and exception."
+  [f]
+  (Thread/setDefaultUncaughtExceptionHandler
+   (reify Thread$UncaughtExceptionHandler
+     (uncaughtException [_ thread ex]
+       (f thread ex)))))
+
+(defn unset-default-uncaught-exception-handler!
+  []
+  (Thread/setDefaultUncaughtExceptionHandler nil))
 
 (defn keyword->string
   [kw]
@@ -46,11 +73,11 @@
 
 (defn run-system!
   [system]
-  (runtime/set-default-uncaught-exception-handler!
+  (set-default-uncaught-exception-handler!
    (fn [thread e]
      (log/error :message "Uncaught exception, system exiting." :exception e :thread thread)
      (System/exit 1)))
-  (runtime/add-shutdown-hook! ::stop-system #(do (log/info :message "System exiting, running shutdown hooks.")
-                                                 (component/stop system)))
+  (add-shutdown-hook! ::stop-system #(do (log/info :message "System exiting, running shutdown hooks.")
+                                         (component/stop system)))
   (component/start system)
   @(promise))
