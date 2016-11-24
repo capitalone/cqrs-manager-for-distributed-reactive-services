@@ -20,8 +20,7 @@
             [com.stuartsierra.component :as c]
             [io.pedestal.log :as log]
             [com.capitalone.commander.util :as util]
-            [com.capitalone.commander.database :as d]
-            [com.capitalone.commander :as commander])
+            [com.capitalone.commander.event-log :as event-log])
   (:import [org.apache.kafka.clients.producer Producer MockProducer KafkaProducer ProducerRecord Callback RecordMetadata]
            [org.apache.kafka.clients.consumer Consumer MockConsumer KafkaConsumer ConsumerRecord OffsetResetStrategy]
            [org.apache.kafka.common.serialization Serializer Deserializer]
@@ -48,13 +47,43 @@
   (deserialize [_ _ data]
     (fressian/read data)))
 
+(defn ^{:private true} producer-record
+  "Constructs a ProducerRecord from a map conforming to
+  ProducerRecordSchema."
+  [record]
+  (let [{:keys [topic value key partition]} record
+        topic                               (str topic)]
+    (cond
+      (and partition key) (ProducerRecord. topic (int partition) key value)
+      key                 (ProducerRecord. topic key value)
+      :else               (ProducerRecord. topic value))))
+
+(s/fdef producer-record
+        :args (s/cat :record ::event-log/producer-record)
+        :ret #(instance? ProducerRecord %))
+
 (defrecord ProducerComponent [^Producer producer ctor]
   c/Lifecycle
   (start [this]
     (assoc this :producer (ctor)))
   (stop  [this]
     (when producer (.close producer))
-    this))
+    this)
+
+  event-log/EventProducer
+  (-send! [this record result-ch]
+    (.send producer
+           (producer-record record)
+           (reify
+             Callback
+             (^void onCompletion [_ ^RecordMetadata rm ^Exception e]
+              (let [ret (when rm
+                          {:offset    (.offset rm)
+                           :partition (.partition rm)
+                           :topic     (.topic rm)
+                           :timestamp (.timestamp rm)})]
+                (a/put! result-ch (or ret e))))))
+    result-ch))
 
 (defn construct-producer
   "Constructs and returns a Producer according to config map (See
@@ -84,69 +113,49 @@
   (map->ProducerComponent
    {:ctor #(MockProducer. true (FressianSerializer.) (FressianSerializer.))}))
 
-(s/def ::key ::commander/id)
-(s/def ::value any?)
-
-(s/def ::producer-record
-  (s/keys :req-un [::commander/topic ::value]
-          :opt-un [::key ::commander/partition]))
-
-(defn ^{:private true} producer-record
-  "Constructs a ProducerRecord from a map conforming to
-  ProducerRecordSchema."
-  [record]
-  (let [{:keys [topic value key partition]} record
-        topic                               (str topic)]
-    (cond
-      (and partition key) (ProducerRecord. topic (int partition) key value)
-      key                 (ProducerRecord. topic key value)
-      :else               (ProducerRecord. topic value))))
-
-(s/fdef producer-record
-        :args (s/cat :record ::producer-record)
-        :ret #(instance? ProducerRecord %))
-
-(defn send!
-  "Sends record (a map of :topic, :value and
-  optionally :key, :partition) via the given Producer component.
-  Returns ch (a promise-chan unless otherwise specified). ch will
-  convey record metadata."
-  ([producer-component record]
-   (send! producer-component record (a/promise-chan)))
-  ([producer-component record ch]
-   (let [^Producer producer (:producer producer-component)]
-     (.send producer
-            (producer-record record)
-            (reify
-              Callback
-              (^void onCompletion [_ ^RecordMetadata rm ^Exception e]
-               (let [ret (when rm
-                           {:offset    (.offset rm)
-                            :partition (.partition rm)
-                            :topic     (.topic rm)
-                            :timestamp (.timestamp rm)})]
-                 (a/put! ch (or ret e))))))
-     ch)))
-
-(s/def ::record-metadata (s/keys :req-un [::commander/topic
-                                          ::commander/partition
-                                          ::commander/offset
-                                          ::commander/timestamp]))
-
-(s/fdef send!
-        :args (s/cat :producer #(instance? ProducerComponent %)
-                     :record   ::producer-record
-                     :ch       (s/? ::WritePort))
-        :ret  ::ReadPort
-        :fn   #(= (-> % :args :ch) (-> % :ret)))
-
 (defrecord ConsumerComponent [^Consumer consumer ctor]
   c/Lifecycle
   (start [this]
     (assoc this :consumer (ctor)))
   (stop [this]
     (when consumer (.wakeup consumer))
-    (dissoc this :consumer)))
+    (dissoc this :consumer))
+
+  event-log/EventConsumer
+  (-consume-onto-channel [this ch timeout]
+    (log/debug ::kafka-consumer-onto-ch! [this ch timeout])
+    (a/thread
+      (log/debug ::kafka-consumer-onto-ch! :consumer
+                 :consumer consumer)
+      (try
+        (loop []
+          (log/trace ::kafka-consumer-onto-ch! :loop
+                     :consumer consumer)
+          (if (p/closed? ch)
+            :done
+            (let [records (.poll consumer timeout)]
+              (doseq [^ConsumerRecord record records]
+                (let [record-map {:key       (.key record)
+                                  :value     (.value record)
+                                  :topic     (.topic record)
+                                  :partition (.partition record)
+                                  :offset    (.offset record)
+                                  :timestamp (.timestamp record)}]
+                  (log/debug ::kafka-consumer-onto-ch! :record-received :record-map record-map)
+                  (when-not (a/>!! ch record-map)
+                    (log/debug ::kafka-consumer-onto-ch! :destination-closed :ch ch))))
+              (recur))))
+        (catch WakeupException e
+          (log/error ::kafka-consumer-onto-ch! "Wakeup received from another thread, closing."
+                     :exception e))
+        (catch Exception e
+          (log/error ::kafka-consumer-onto-ch! "Exception while polling Kafka, and re-throwing."
+                     :exception e)
+          (throw e))
+        (finally
+          (log/info ::kafka-consumer-onto-ch! "Cleaning up Kafka consumer and closing.")
+          (.close consumer)
+          :done)))))
 
 (defn construct-consumer
   "Creates a KafkaConsumer for the given config map (must include at
@@ -170,50 +179,3 @@
 
 (defn mock-consumer []
   (map->ConsumerComponent {:ctor #(MockConsumer. OffsetResetStrategy/LATEST)}))
-
-(defn kafka-consumer-onto-ch!
-  "On a new thread, polls on a loop the given a KafkaConsumer created
-  by zero-arity fn consumer-ctor, putting onto ch a map
-  of :key, :value, :topic, :partition, and :offset for every
-  ConsumerRecord it receives. Exits loop, unsubscribes, and closes
-  KafkaConsumer on error, or if ch is closed.
-
-  Caller can optionally specify a polling timeout (in milliseconds,
-  defaults to 10000)."
-  ([consumer-component ch]
-   (kafka-consumer-onto-ch! consumer-component ch 10000))
-  ([consumer-component ch timeout]
-   (log/debug ::kafka-consumer-onto-ch! [consumer-component ch timeout])
-   (let [^Consumer consumer (:consumer consumer-component)]
-     (a/thread
-       (log/debug ::kafka-consumer-onto-ch! :consumer
-                  :consumer consumer)
-       (try
-         (loop []
-           (log/trace ::kafka-consumer-onto-ch! :loop
-                      :consumer consumer)
-           (if (p/closed? ch)
-             :done
-             (let [records (.poll consumer timeout)]
-               (doseq [^ConsumerRecord record records]
-                 (let [record-map {:key       (.key record)
-                                   :value     (.value record)
-                                   :topic     (.topic record)
-                                   :partition (.partition record)
-                                   :offset    (.offset record)
-                                   :timestamp (.timestamp record)}]
-                   (log/debug ::kafka-consumer-onto-ch! :record-received :record-map record-map)
-                   (when-not (a/>!! ch record-map)
-                     (log/debug ::kafka-consumer-onto-ch! :destination-closed :ch ch))))
-               (recur))))
-         (catch WakeupException e
-           (log/error ::kafka-consumer-onto-ch! "Wakeup received from another thread, closing."
-                      :exception e))
-         (catch Exception e
-           (log/error ::kafka-consumer-onto-ch! "Exception while polling Kafka, and re-throwing."
-                      :exception e)
-           (throw e))
-         (finally
-           (log/info ::kafka-consumer-onto-ch! "Cleaning up Kafka consumer and closing.")
-           (.close consumer)
-           :done))))))

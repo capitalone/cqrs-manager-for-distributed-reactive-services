@@ -19,7 +19,7 @@
             [clj-uuid :as uuid]
             [com.capitalone.commander :as commander]
             [com.capitalone.commander.database :as d]
-            [com.capitalone.commander.event-log.kafka :as k])
+            [com.capitalone.commander.event-log :as e])
   (:import [org.apache.kafka.clients.consumer Consumer]))
 
 (set! *warn-on-reflection* true)
@@ -225,7 +225,7 @@
 (defn- send-command-and-await-result!
   [kafka-producer command-topic id command]
   (let [record (command-record command-topic id command)
-        ch (k/send! kafka-producer record)]
+        ch (e/send! kafka-producer record)]
     (if-some [ret (a/<!! ch)]
       (if (instance? Exception ret)
         (throw (ex-info "Error writing to Kafka" {:record record} ret))
@@ -321,7 +321,7 @@
       (a/sub pub events-topic events-ch)
       (a/tap events-mult events-ch-copy)
 
-      (k/kafka-consumer-onto-ch! kafka-consumer ch)
+      (e/consume-onto-ch! kafka-consumer ch)
 
       (assoc this
              :ch            ch
