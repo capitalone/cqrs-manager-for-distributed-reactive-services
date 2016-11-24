@@ -19,8 +19,7 @@
             [clj-uuid :as uuid]
             [com.capitalone.commander :as commander]
             [com.capitalone.commander.database :as d]
-            [com.capitalone.commander.event-log :as e])
-  (:import [org.apache.kafka.clients.consumer Consumer]))
+            [com.capitalone.commander.event-log :as e]))
 
 (set! *warn-on-reflection* true)
 
@@ -303,8 +302,7 @@
 
   c/Lifecycle
   (start [this]
-    (let [^Consumer consumer (:consumer kafka-consumer)
-          ch             (a/chan 1)
+    (let [ch             (a/chan 1)
           pub            (a/pub ch :topic)
 
           events-ch      (a/chan 1)
@@ -315,7 +313,7 @@
 
           commands-ch    (a/chan 1)
           commands-mult  (a/mult commands-ch)]
-      (.subscribe consumer [commands-topic events-topic])
+      (e/subscribe! this [commands-topic events-topic])
 
       (a/sub pub commands-topic commands-ch)
       (a/sub pub events-topic events-ch)

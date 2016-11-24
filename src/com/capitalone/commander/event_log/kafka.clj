@@ -122,6 +122,9 @@
     (dissoc this :consumer))
 
   event-log/EventConsumer
+  (-subscribe! [_ topics]
+    (.subscribe consumer topics))
+
   (-consume-onto-channel [this ch timeout]
     (log/debug ::kafka-consumer-onto-ch! [this ch timeout])
     (a/thread
