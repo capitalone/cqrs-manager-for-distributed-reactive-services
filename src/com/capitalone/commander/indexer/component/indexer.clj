@@ -16,7 +16,7 @@
             [com.stuartsierra.component :as component]
             [io.pedestal.log :as log]
             [clojure.java.jdbc :as j]
-            [com.capitalone.commander.api :as api]
+            [com.capitalone.commander :as api]
             [com.capitalone.commander.database :as d]
             [com.capitalone.commander.event-log.kafka :as k])
   (:import [org.apache.kafka.clients.consumer Consumer ConsumerRebalanceListener]

@@ -15,7 +15,7 @@
             [io.pedestal.log :as log]
             [com.stuartsierra.component :as c]
             [com.capitalone.commander.util :as util]
-            [com.capitalone.commander.api :as api])
+            [com.capitalone.commander :as api])
   (:import java.util.UUID
            [com.capitalone.commander.grpc
             CommanderProtos
