@@ -67,8 +67,9 @@
   (-subscribe! consumer topics))
 
 (defn consume-onto-channel
-  "Consumes records from the consumer and conveys them on the channel"
+  "Consumes records from the consumer and conveys them on the channel.  Returns the channel."
   ([consumer channel]
    (consume-onto-channel consumer channel 10000))
   ([consumer channel timeout]
-   (-consume-onto-channel consumer channel timeout)))
+   (-consume-onto-channel consumer channel timeout)
+   channel))
