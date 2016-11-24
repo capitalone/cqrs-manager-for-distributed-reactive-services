@@ -14,13 +14,15 @@
 (ns com.capitalone.commander.event-log
   (:require [clojure.core.async :as a]))
 
+(set! *warn-on-reflection* true)
+
 (defprotocol EventProducer
   (-send! [this record result-ch]
     "Sends a single record to the Event Log.
     Returns result-ch, which will convey record metadata."))
 
 (defn send!
-  "Sends a single record to the Event Log"
+  "Writes a single record to the Event Log"
   ([producer record]
    (send! producer record (a/promise-chan)))
   ([producer record result-ch]
