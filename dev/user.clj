@@ -22,7 +22,7 @@
             [meta-merge.core :refer [meta-merge]]
             [reloaded.repl :refer [system init start stop go reset]]
             [io.pedestal.log :as log]
-            [com.capitalone.clojure.runtime :as runtime]
+            [com.capitalone.commander.util :as util]
             [com.capitalone.commander.rest.config :as rest-config]
             [com.capitalone.commander.rest.system :as rest-system]
             [com.capitalone.commander.indexer.config :as indexer-config]
@@ -32,7 +32,7 @@
 
 (stest/instrument)
 
-(runtime/set-default-uncaught-exception-handler!
+(util/set-default-uncaught-exception-handler!
  (fn [thread ex] (log/error ::default-uncaught-exception-handler thread
                             :exception ex)))
 

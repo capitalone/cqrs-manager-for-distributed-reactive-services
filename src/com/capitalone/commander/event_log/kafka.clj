@@ -29,10 +29,6 @@
 
 (set! *warn-on-reflection* true)
 
-(s/def ::ReadPort  #(satisfies? p/ReadPort %))
-(s/def ::WritePort #(satisfies? p/WritePort %))
-(s/def ::Channel   #(satisfies? p/Channel %))
-
 (deftype FressianSerializer []
   Serializer
   (close [_])
@@ -125,7 +121,7 @@
   (-subscribe! [_ topics]
     (.subscribe consumer topics))
 
-  (-consume-onto-channel [this ch timeout]
+  (-consume-onto-channel! [this ch timeout]
     (log/debug ::kafka-consumer-onto-ch! [this ch timeout])
     (a/thread
       (log/debug ::kafka-consumer-onto-ch! :consumer

@@ -12,7 +12,9 @@
 ;; See the License for the specific language governing permissions and limitations under the License.
 
 (ns com.capitalone.commander.event-log
-  (:require [clojure.core.async :as a]))
+  (:require [clojure.spec :as s]
+            [clojure.core.async :as a]
+            [clojure.core.async.impl.protocols :as p]))
 
 (set! *warn-on-reflection* true)
 
@@ -28,6 +30,10 @@
   ([producer record result-ch]
    (-send! producer record result-ch)))
 
+(s/def ::ReadPort  #(satisfies? p/ReadPort %))
+(s/def ::WritePort #(satisfies? p/WritePort %))
+(s/def ::Channel   #(satisfies? p/Channel %))
+
 (s/def ::record-metadata (s/keys :req-un [:com.capitalone.commander/topic
                                           :com.capitalone.commander/partition
                                           :com.capitalone.commander/offset
@@ -41,7 +47,7 @@
           :opt-un [::key :com.capitalone.commander/partition]))
 
 (s/fdef send!
-        :args (s/cat :producer #(instance? EventProducer %)
+        :args (s/cat :producer #(satisfies? EventProducer %)
                      :record   ::producer-record
                      :ch       (s/? ::WritePort))
         :ret  ::ReadPort
@@ -55,7 +61,7 @@
     topics. Return value isn't meaningful, this function is executed
     for side effects.")
 
-  (-consume-onto-channel [this channel timeout]
+  (-consume-onto-channel! [this channel timeout]
     "Consumes records from the consumer (polling every `timeout` ms)
     and conveys them on the channel"))
 
@@ -66,10 +72,10 @@
   [consumer topics]
   (-subscribe! consumer topics))
 
-(defn consume-onto-channel
+(defn consume-onto-channel!
   "Consumes records from the consumer and conveys them on the channel.  Returns the channel."
   ([consumer channel]
-   (consume-onto-channel consumer channel 10000))
+   (consume-onto-channel! consumer channel 10000))
   ([consumer channel timeout]
-   (-consume-onto-channel consumer channel timeout)
+   (-consume-onto-channel! consumer channel timeout)
    channel))

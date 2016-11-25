@@ -222,20 +222,20 @@
    :value command})
 
 (defn- send-command-and-await-result!
-  [kafka-producer command-topic id command]
+  [event-log-producer command-topic id command]
   (let [record (command-record command-topic id command)
-        ch (e/send! kafka-producer record)]
+        ch (e/send! event-log-producer record)]
     (if-some [ret (a/<!! ch)]
       (if (instance? Exception ret)
-        (throw (ex-info "Error writing to Kafka" {:record record} ret))
+        (throw (ex-info "Error writing to event-log" {:record record} ret))
         ret)
-      (throw (ex-info "Error writing to Kafka: send response channel closed" {:record record})))))
+      (throw (ex-info "Error writing to event-log: send response channel closed" {:record record})))))
 
 (defrecord Commander [database
-                      kafka-producer
+                      event-log-producer
                       commands-topic
                       events-topic
-                      kafka-consumer
+                      event-log-consumer
                       ch
                       pub
                       commands-ch
@@ -247,7 +247,7 @@
   CommandService
   (-create-command [this command-params]
     (let [id     (uuid/v1)
-          result (send-command-and-await-result! kafka-producer commands-topic id command-params)]
+          result (send-command-and-await-result! event-log-producer commands-topic id command-params)]
       (assoc command-params
              :id        id
              :timestamp (:timestamp result)
@@ -258,7 +258,7 @@
     (let [id     (uuid/v1)
           rch    (a/promise-chan)
           _      (a/sub events-pub id rch)
-          result (send-command-and-await-result! kafka-producer commands-topic id command-params)
+          result (send-command-and-await-result! event-log-producer commands-topic id command-params)
           base   (assoc command-params
                         :id        id
                         :timestamp (:timestamp result)
@@ -313,13 +313,13 @@
 
           commands-ch    (a/chan 1)
           commands-mult  (a/mult commands-ch)]
-      (e/subscribe! this [commands-topic events-topic])
+      (e/subscribe! event-log-consumer [commands-topic events-topic])
 
       (a/sub pub commands-topic commands-ch)
       (a/sub pub events-topic events-ch)
       (a/tap events-mult events-ch-copy)
 
-      (e/consume-onto-ch! kafka-consumer ch)
+      (e/consume-onto-channel! event-log-consumer ch)
 
       (assoc this
              :ch            ch

@@ -18,7 +18,7 @@
             [clojure.java.jdbc :as j]
             [com.capitalone.commander.api :as api]
             [com.capitalone.commander.database :as d]
-            [com.capitalone.commander.event-log.kafka :as k])
+            [com.capitalone.commander.event-log :as e])
   (:import [org.apache.kafka.clients.consumer Consumer ConsumerRebalanceListener]
            [org.apache.kafka.common TopicPartition]))
 
@@ -65,7 +65,7 @@
                       (log/info ::ConsumerRebalanceListener :onPartitionsRevoked
                                 :partitions partitions))))
 
-      (k/kafka-consumer-onto-ch! kafka-consumer ch)
+      (e/consume-onto-channel! kafka-consumer ch)
       (record-commands-and-events! database commands-topic events-topic ch)
       (assoc this :ch ch)))
   (stop [this]
