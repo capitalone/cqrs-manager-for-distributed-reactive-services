@@ -17,25 +17,25 @@
             [io.pedestal.log :as log]
             [clojure.java.jdbc :as j]
             [com.capitalone.commander.api :as api]
-            [com.capitalone.commander.database :as d]
-            [com.capitalone.commander.event-log :as e])
+            [com.capitalone.commander.index :as index]
+            [com.capitalone.commander.log :as l])
   (:import [org.apache.kafka.clients.consumer Consumer ConsumerRebalanceListener]
            [org.apache.kafka.common TopicPartition]))
 
 (set! *warn-on-reflection* true)
 
 (defn record-commands-and-events!
-  "Records all commands and events arriving on ch to the given database
+  "Records all commands and events arriving on ch to the given index
   component. Returns the go-loop channel that will convey :done when ch is closed."
-  [database commands-topic events-topic ch]
-  (log/debug ::record-events! [database commands-topic events-topic ch])
+  [index commands-topic events-topic ch]
+  (log/debug ::record-events! [index commands-topic events-topic ch])
   (a/go-loop []
     (when-some [msg (a/<! ch)]
       (try
         (log/debug ::record-events! :msg :msg msg)
         (condp = (:topic msg)
-          events-topic   (d/insert-events! database (api/event-map msg))
-          commands-topic (d/insert-commands! database (api/command-map msg))
+          events-topic   (index/insert-events! index (api/event-map msg))
+          commands-topic (index/insert-commands! index (api/command-map msg))
           (log/warn ::record-commands-and-events! "Unexpected topic and message"
                     :topic (:topic msg)
                     :msg msg))
@@ -43,7 +43,7 @@
           (log/error :msg "Error indexing event" :msg msg :exception e)))
       (recur))))
 
-(defrecord Indexer [database kafka-consumer commands-topic events-topic ch]
+(defrecord Indexer [index kafka-consumer commands-topic events-topic ch]
   component/Lifecycle
   (start [this]
     (let [ch (a/chan 1)
@@ -56,7 +56,7 @@
                       (log/info ::ConsumerRebalanceListener :onPartitionsAssigned
                                 :partitions partitions)
                       (doseq [^TopicPartition partition partitions]
-                        (let [offset (or (d/find-latest-partition-offset database
+                        (let [offset (or (index/find-latest-partition-offset index
                                                                          (.topic partition)
                                                                          (.partition partition))
                                          -1)]
@@ -65,8 +65,8 @@
                       (log/info ::ConsumerRebalanceListener :onPartitionsRevoked
                                 :partitions partitions))))
 
-      (e/consume-onto-channel! kafka-consumer ch)
-      (record-commands-and-events! database commands-topic events-topic ch)
+      (l/consume-onto-channel! kafka-consumer ch)
+      (record-commands-and-events! index commands-topic events-topic ch)
       (assoc this :ch ch)))
   (stop [this]
     (when ch (a/close! ch))

@@ -11,7 +11,7 @@
 ;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 ;; See the License for the specific language governing permissions and limitations under the License.
 
-(ns com.capitalone.commander.event-log.kafka
+(ns com.capitalone.commander.log.kafka
   (:refer-clojure :exclude [partition])
   (:require [clojure.core.async :as a]
             [clojure.core.async.impl.protocols :as p]
@@ -20,7 +20,7 @@
             [com.stuartsierra.component :as c]
             [io.pedestal.log :as log]
             [com.capitalone.commander.util :as util]
-            [com.capitalone.commander.event-log :as event-log])
+            [com.capitalone.commander.log :as l])
   (:import [org.apache.kafka.clients.producer Producer MockProducer KafkaProducer ProducerRecord Callback RecordMetadata]
            [org.apache.kafka.clients.consumer Consumer MockConsumer KafkaConsumer ConsumerRecord OffsetResetStrategy]
            [org.apache.kafka.common.serialization Serializer Deserializer]
@@ -55,7 +55,7 @@
       :else               (ProducerRecord. topic value))))
 
 (s/fdef producer-record
-        :args (s/cat :record ::event-log/producer-record)
+        :args (s/cat :record ::l/producer-record)
         :ret #(instance? ProducerRecord %))
 
 (defrecord ProducerComponent [^Producer producer ctor]
@@ -66,7 +66,7 @@
     (when producer (.close producer))
     this)
 
-  event-log/EventProducer
+  l/EventProducer
   (-send! [this record result-ch]
     (.send producer
            (producer-record record)
@@ -117,7 +117,7 @@
     (when consumer (.wakeup consumer))
     (dissoc this :consumer))
 
-  event-log/EventConsumer
+  l/EventConsumer
   (-subscribe! [_ topics]
     (.subscribe consumer topics))
 

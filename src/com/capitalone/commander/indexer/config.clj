@@ -26,4 +26,4 @@
                     :events-topic   (:events-topic env)}
    :kafka-consumer {:servers  (:kafka-servers env)
                     :group-id (:indexer-group-id env)}
-   :database       {:connection-uri (:database-uri env)}})
+   :index          {:connection-uri (:database-uri env)}})

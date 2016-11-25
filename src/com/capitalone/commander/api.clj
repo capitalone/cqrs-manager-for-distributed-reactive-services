@@ -18,8 +18,8 @@
             [io.pedestal.log :as log]
             [clj-uuid :as uuid]
             [com.capitalone.commander :as commander]
-            [com.capitalone.commander.database :as d]
-            [com.capitalone.commander.event-log :as e]))
+            [com.capitalone.commander.index :as index]
+            [com.capitalone.commander.log :as l]))
 
 (set! *warn-on-reflection* true)
 
@@ -222,20 +222,20 @@
    :value command})
 
 (defn- send-command-and-await-result!
-  [event-log-producer command-topic id command]
+  [log-producer command-topic id command]
   (let [record (command-record command-topic id command)
-        ch (e/send! event-log-producer record)]
+        ch (l/send! log-producer record)]
     (if-some [ret (a/<!! ch)]
       (if (instance? Exception ret)
-        (throw (ex-info "Error writing to event-log" {:record record} ret))
+        (throw (ex-info "Error writing to log" {:record record} ret))
         ret)
-      (throw (ex-info "Error writing to event-log: send response channel closed" {:record record})))))
+      (throw (ex-info "Error writing to log: send response channel closed" {:record record})))))
 
-(defrecord Commander [database
-                      event-log-producer
+(defrecord Commander [index
+                      log-producer
                       commands-topic
                       events-topic
-                      event-log-consumer
+                      log-consumer
                       ch
                       pub
                       commands-ch
@@ -247,7 +247,7 @@
   CommandService
   (-create-command [this command-params]
     (let [id     (uuid/v1)
-          result (send-command-and-await-result! event-log-producer commands-topic id command-params)]
+          result (send-command-and-await-result! log-producer commands-topic id command-params)]
       (assoc command-params
              :id        id
              :timestamp (:timestamp result)
@@ -258,7 +258,7 @@
     (let [id     (uuid/v1)
           rch    (a/promise-chan)
           _      (a/sub events-pub id rch)
-          result (send-command-and-await-result! event-log-producer commands-topic id command-params)
+          result (send-command-and-await-result! log-producer commands-topic id command-params)
           base   (assoc command-params
                         :id        id
                         :timestamp (:timestamp result)
@@ -276,9 +276,9 @@
           (a/close! rch)
           (a/unsub events-pub id rch)))))
   (-list-commands [_ offset limit]
-    (d/fetch-commands database offset limit))
+    (index/fetch-commands index offset limit))
   (-get-command-by-id [this id]
-    (d/fetch-command-by-id database id))
+    (index/fetch-command-by-id index id))
   (-commands-ch [this ch]
     (let [int (a/chan 1 (map command-map))]
       (a/pipe int ch)
@@ -291,9 +291,9 @@
 
   EventService
   (-list-events [this offset limit]
-    (d/fetch-events database offset limit))
+    (index/fetch-events index offset limit))
   (-get-event-by-id [this id]
-    (d/fetch-event-by-id database id))
+    (index/fetch-event-by-id index id))
   (-events-ch [this ch]
     (let [int (a/chan 1 (map event-map))]
       (a/pipe int ch)
@@ -313,13 +313,13 @@
 
           commands-ch    (a/chan 1)
           commands-mult  (a/mult commands-ch)]
-      (e/subscribe! event-log-consumer [commands-topic events-topic])
+      (l/subscribe! log-consumer [commands-topic events-topic])
 
       (a/sub pub commands-topic commands-ch)
       (a/sub pub events-topic events-ch)
       (a/tap events-mult events-ch-copy)
 
-      (e/consume-onto-channel! event-log-consumer ch)
+      (l/consume-onto-channel! log-consumer ch)
 
       (assoc this
              :ch            ch

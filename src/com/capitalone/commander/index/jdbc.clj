@@ -11,27 +11,20 @@
 ;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 ;; See the License for the specific language governing permissions and limitations under the License.
 
-(ns com.capitalone.commander.database
+(ns com.capitalone.commander.index.jdbc
   (:gen-class)
   (:require [clojure.string :as string]
-            [clojure.spec :as s]
-            [clojure.data.fressian :as fressian]
             [clojure.java.jdbc :as j]
             ragtime.jdbc
             ragtime.repl
-            [com.stuartsierra.component :as component]
-            [io.pedestal.log :as log]
+            [clojure.data.fressian :as fressian]
             [io.pedestal.http.route :as route]
+            [io.pedestal.log :as log]
+            [com.stuartsierra.component :as component]
             [com.capitalone.commander.util :as util]
-            [com.capitalone.commander :as commander]))
+            [com.capitalone.commander.index :as index]))
 
 (set! *warn-on-reflection* true)
-
-(defprotocol CommonDataAccess
-  (-find-latest-partition-offset [database topic partition]
-    "Finds and returns the highest seen offset for the given topic partition."))
-
-(s/def ::CommonDataAccess (partial satisfies? CommonDataAccess))
 
 (defn event-from-select [c]
   (cond-> c
@@ -39,153 +32,6 @@
     (:data c) (update-in [:data] fressian/read)))
 
 (def command-from-select event-from-select)
-
-(defn find-latest-partition-offset
-  [database topic partition]
-  (log/debug ::find-latest-commands-offset [database topic partition])
-  (-find-latest-partition-offset database topic partition))
-
-(s/fdef find-latest-partition-offset
-        :args (s/cat :database  ::CommonDataAccess
-                     :topic     ::commander/topic
-                     :partition ::commander/partition)
-        :ret (s/nilable ::commander/offset))
-
-(defprotocol CommandDataAccess
-  (-fetch-commands [database limit offset]
-    "Fetches commands from the given database component, returning a map of
-      - :commands a vector of command maps
-      - :limit the limit passed to the query
-      - :offset the offset passed to the query
-      - :total the total count of commands")
-  (-fetch-command-by-id [database id]
-    "Fetches and returns a single command from the given database component, identified by its UUID.")
-  (-insert-commands! [database commands]
-    "Inserts the given command maps into the given database component.
-    Returns true if insert succeeded, false otherwise."))
-
-(s/def ::CommandDataAccess (partial satisfies? CommandDataAccess))
-
-(defn fetch-commands
-  "Fetches commands from the given database component, returning a map of
-    - :commands a vector of command maps
-    - :limit the limit passed to the query
-    - :offset the offset passed to the query
-    - :total the total count of commands"
-  ([database]
-   (fetch-commands database 0 0))
-  ([database limit offset]
-   (log/debug ::fetch-commands [database limit offset])
-   (let [limit  (or limit 0)
-         offset (or offset 0)]
-     (-fetch-commands database limit offset))))
-
-(s/fdef fetch-commands
-        :args (s/cat :database ::CommandDataAccess
-                     :offset (s/int-in 0 Long/MAX_VALUE)
-                     :limit  (s/int-in 0 Long/MAX_VALUE))
-        :ret (s/every ::commander/command)
-        :fn #(let [limit (-> % :args :limit)]
-               (if (pos? limit)
-                 (= (-> % :ret count) limit)
-                 true)))
-
-(defn fetch-command-by-id
-  "Fetches and returns a single command from the given database
-  component, identified by its UUID.  Includes all decendent events of
-  the given command."
-  [database id]
-  (log/debug ::fetch-command-by-id [database id])
-  (-fetch-command-by-id database id))
-
-(s/fdef fetch-command-by-id
-        :args (s/cat :database ::CommandDataAccess
-                     :id  ::commander/id)
-        :ret ::commander/command)
-
-(defn insert-commands!
-  "Inserts the given command maps into the given database
-  component. Returns true if insert succeeded, false otherwise."
-  [database commands]
-  (log/debug ::insert-commands! [database commands])
-  (if (sequential? commands)
-    (-insert-commands! database commands)
-    (insert-commands! database [commands])))
-
-(s/fdef insert-commands!
-        :args (s/cat :database ::CommandDataAccess
-                     :command (s/or :single ::commander/command
-                                    :collection (s/and sequential?
-                                                       (s/every ::commander/command
-                                                                :kind vector?))))
-        :ret boolean?)
-
-(defprotocol EventDataAccess
-  (-fetch-events [database limit offset]
-    "Fetches events from the given database component, returning a map of
-      - :events a vector of event maps
-      - :limit the limit passed to the query
-      - :offset the offset passed to the query
-      - :total the total count of events")
-  (-fetch-event-by-id [database id]
-    "Fetches and returns a single event from the given database component, identified by its UUID.")
-  (-insert-events! [database events]
-    "Inserts the given event maps into the given database component.
-    Returns true if insert succeeded, false otherwise."))
-
-(s/def ::EventDataAccess (partial satisfies? EventDataAccess))
-
-(defn fetch-events
-  "Fetches events from the given database component, returning a map of
-    - :events a vector of event maps
-    - :limit the limit passed to the query
-    - :offset the offset passed to the query
-    - :total the total count of events"
-  ([database]
-   (fetch-events database nil nil))
-  ([database limit offset]
-   (log/debug ::fetch-events [database limit offset])
-   (let [limit  (or limit 0)
-         offset (or offset 0)]
-     (-fetch-events database limit offset))))
-
-(s/fdef fetch-events
-        :args (s/cat :database ::EventDataAccess
-                     :offset (s/int-in 0 Long/MAX_VALUE)
-                     :limit  (s/int-in 0 Long/MAX_VALUE))
-        :ret (s/every ::commander/event)
-        :fn #(let [limit (-> % :args :limit)]
-               (if (pos? limit)
-                 (= (-> % :ret count) limit)
-                 true)))
-
-(defn fetch-event-by-id
-  "Fetches and returns a single event from the given database
-  component, identified by its UUID.  Includes all decendent events of
-  the given event."
-  [database id]
-  (log/debug ::fetch-event-by-id [database id])
-  (-fetch-event-by-id database id))
-
-(s/fdef fetch-event-by-id
-        :args (s/cat :database ::EventDataAccess
-                     :id  ::commander/id)
-        :ret ::commander/event)
-
-(defn insert-events!
-  "Inserts the given event maps into the given database
-  component. Returns true if insert succeeded, false otherwise."
-  [database events]
-  (log/debug ::insert-events! [database events])
-  (if (sequential? events)
-    (-insert-events! database events)
-    (insert-events! database [events])))
-
-(s/fdef insert-events!
-        :args (s/cat :database ::EventDataAccess
-                     :event (s/or :single ::commander/event
-                                  :collection (s/every ::commander/event)))
-        :ret boolean?)
 
 (defn- event-for-insert
   [event]
@@ -201,7 +47,7 @@
       event-for-insert
       (assoc :command true)))
 
-(defrecord JdbcDatabase [db-spec connection init-fn]
+(defrecord JdbcIndex [db-spec connection init-fn]
   component/Lifecycle
   (start [component]
     (let [conn (or connection (j/get-connection db-spec))
@@ -211,72 +57,72 @@
     (when connection (.close ^java.lang.AutoCloseable connection))
     (assoc component :connection nil))
 
-  CommonDataAccess
-  (-find-latest-partition-offset [database topic part]
-    (first (j/query database
+  index/CommonDataAccess
+  (-find-latest-partition-offset [index topic part]
+    (first (j/query index
                     ["SELECT max(commander.offset) FROM commander WHERE topic = ? AND partition = ?" topic part]
                     {:row-fn :max})))
 
 
-  CommandDataAccess
-  (-fetch-commands [database limit offset]
+  index/CommandDataAccess
+  (-fetch-commands [index limit offset]
     (let [commands-query (if (pos? limit)
                            ["SELECT id, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = true ORDER BY timestamp ASC LIMIT ? OFFSET ?"
                             limit
                             offset]
                            ["SELECT id, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = true ORDER BY timestamp ASC OFFSET ?"
                             offset])]
-      (j/with-db-transaction [tx database {:read-only? true}]
-        {:commands (map command-from-select (j/query database commands-query))
+      (j/with-db-transaction [tx index {:read-only? true}]
+        {:commands (map command-from-select (j/query index commands-query))
          :offset   offset
          :limit    limit
-         :total    (first (j/query database
+         :total    (first (j/query index
                                    ["SELECT count(id) FROM commander WHERE command = true"]
                                    {:row-fn :count}))})))
-  (-fetch-command-by-id [database id]
-    (some-> (j/query database
+  (-fetch-command-by-id [index id]
+    (some-> (j/query index
                      ["SELECT id, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = true AND id = ?" id])
             first
             command-from-select))
-  (-insert-commands! [database commands]
-    (j/insert-multi! database :commander
+  (-insert-commands! [index commands]
+    (j/insert-multi! index :commander
                      (map command-for-insert commands)
                      {:entities     (j/quoted \")
                       :transaction? false}))
 
-  EventDataAccess
-  (-fetch-events [database limit offset]
+  index/EventDataAccess
+  (-fetch-events [index limit offset]
     (let [events-query (if (pos? limit)
                          ["SELECT id, parent, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = false ORDER BY timestamp ASC LIMIT ? OFFSET ?"
                           limit
                           offset]
                          ["SELECT id, parent, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = false ORDER BY timestamp ASC OFFSET ?"
                           offset])]
-      (j/with-db-transaction [tx database {:read-only? true}]
-        {:events (map event-from-select (j/query database events-query))
+      (j/with-db-transaction [tx index {:read-only? true}]
+        {:events (map event-from-select (j/query index events-query))
          :offset offset
          :limit  limit
-         :total  (first (j/query database
+         :total  (first (j/query index
                                  ["SELECT count(id) FROM commander WHERE command = false"]
                                  {:row-fn :count}))})))
-  (-fetch-event-by-id [database id]
-    (some-> (j/query database
+  (-fetch-event-by-id [index id]
+    (some-> (j/query index
                      ["SELECT id, parent, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = false AND id = ?" id])
             first
             event-from-select))
-  (-insert-events! [database events]
-    (j/insert-multi! database :commander
+  (-insert-events! [index events]
+    (j/insert-multi! index :commander
                      (map event-for-insert events)
                      {:entities (j/quoted \")
                       :transaction? false})))
 
 (defn construct-jdbc-db
   ([db-spec]
-   (map->JdbcDatabase {:db-spec db-spec}))
+   (map->JdbcIndex {:db-spec db-spec}))
   ([db-spec init-fn]
-   (map->JdbcDatabase {:db-spec db-spec :init-fn init-fn})))
+   (map->JdbcIndex {:db-spec db-spec :init-fn init-fn})))
 
-;;;; Database Bootstrap & Migrations
+;;;; Index Bootstrap & Migrations
 
 (defn ragtime-config
   [database]

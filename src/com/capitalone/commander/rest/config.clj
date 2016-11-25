@@ -34,5 +34,5 @@
                     :sync-timeout-ms (some-> env ^String (:sync-timeout-ms) Integer.)}
    :kafka-consumer {:servers  (:kafka-servers env)
                     :group-id (:rest-group-id env)}
-   :database       {:connection-uri (:database-uri env)}
+   :index          {:connection-uri (:database-uri env)}
    :kafka-producer {:servers (:kafka-servers env)}})

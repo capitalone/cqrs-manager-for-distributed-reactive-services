@@ -19,8 +19,8 @@
             [com.capitalone.commander.rest.component.routes :refer [construct-routes]]
             [com.capitalone.commander.rest.component.pedestal :refer [construct-pedestal-server]]
             [com.capitalone.commander.grpc :refer [construct-grpc-server]]
-            [com.capitalone.commander.database :refer [construct-jdbc-db]]
-            [com.capitalone.commander.event-log.kafka :refer [construct-producer construct-consumer]]
+            [com.capitalone.commander.index.jdbc :refer [construct-jdbc-db]]
+            [com.capitalone.commander.log.kafka :refer [construct-producer construct-consumer]]
             [com.capitalone.commander.api :refer [construct-commander-api]]))
 
 (set! *warn-on-reflection* true)
@@ -34,17 +34,17 @@
   (let [config (meta-merge config base-config)]
     (log/info :msg "Creating system" :config config)
     (-> (component/system-map
-         :rest-endpoints     (construct-commander-rest-endpoints)
-         :grpc-server        (construct-grpc-server (:grpc config))
-         :http               (construct-pedestal-server (:http config))
-         :routes             (construct-routes)
-         :database           (construct-jdbc-db  (:database config))
-         :event-log-consumer (construct-consumer (:kafka-consumer config))
-         :event-log-producer (construct-producer (:kafka-producer config))
-         :api                (construct-commander-api (:api config)))
+         :rest-endpoints (construct-commander-rest-endpoints)
+         :grpc-server    (construct-grpc-server (:grpc config))
+         :http           (construct-pedestal-server (:http config))
+         :routes         (construct-routes)
+         :index          (construct-jdbc-db  (:index config))
+         :log-consumer   (construct-consumer (:kafka-consumer config))
+         :log-producer   (construct-producer (:kafka-producer config))
+         :api            (construct-commander-api (:api config)))
         (component/system-using
          {:http           [:routes]
           :routes         [:rest-endpoints]
           :rest-endpoints [:api]
           :grpc-server    [:api]
-          :api            [:event-log-producer :event-log-consumer :database]}))))
+          :api            [:log-producer :log-consumer :index]}))))

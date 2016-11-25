@@ -15,8 +15,8 @@
   (:require [com.stuartsierra.component :as component]
             [meta-merge.core :refer [meta-merge]]
             [io.pedestal.log :as log]
-            [com.capitalone.commander.database :refer [construct-jdbc-db]]
-            [com.capitalone.commander.event-log.kafka :refer [construct-consumer]]
+            [com.capitalone.commander.index.jdbc :refer [construct-jdbc-db]]
+            [com.capitalone.commander.log.kafka :refer [construct-consumer]]
             [com.capitalone.commander.indexer.component.indexer :refer [construct-indexer]]))
 
 (set! *warn-on-reflection* true)
@@ -29,8 +29,8 @@
     (log/info :msg "Creating system" :config config)
     (-> (component/system-map
          :consumer (construct-consumer (:kafka-consumer config))
-         :database (construct-jdbc-db (:database config))
+         :index    (construct-jdbc-db (:index config))
          :indexer  (construct-indexer (:indexer config)))
         (component/system-using
-          {:indexer {:database       :database
-                     :kafka-consumer :consumer}}))))
+         {:indexer {:index          :index
+                    :kafka-consumer :consumer}}))))
