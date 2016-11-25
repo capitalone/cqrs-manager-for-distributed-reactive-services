@@ -28,7 +28,7 @@
              [core :as papi]
              [helpers :refer [defhandler]]]
             [ring.util.response :as ring-resp]
-            [com.capitalone.commander :as api]
+            [com.capitalone.commander.api :as api]
             [com.capitalone.commander.rest.hiccup :as h]))
 
 (set! *warn-on-reflection* true)
