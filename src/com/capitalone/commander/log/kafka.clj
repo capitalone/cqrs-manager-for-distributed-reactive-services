@@ -20,9 +20,10 @@
             [com.stuartsierra.component :as c]
             [io.pedestal.log :as log]
             [com.capitalone.commander.util :as util]
+            [com.capitalone.commander.index :as index]
             [com.capitalone.commander.log :as l])
   (:import [org.apache.kafka.clients.producer Producer MockProducer KafkaProducer ProducerRecord Callback RecordMetadata]
-           [org.apache.kafka.clients.consumer Consumer MockConsumer KafkaConsumer ConsumerRecord OffsetResetStrategy]
+           [org.apache.kafka.clients.consumer Consumer ConsumerRebalanceListener MockConsumer KafkaConsumer ConsumerRecord OffsetResetStrategy]
            [org.apache.kafka.common.serialization Serializer Deserializer]
            [org.apache.kafka.common.errors WakeupException]
            [org.apache.kafka.common TopicPartition]))
@@ -118,8 +119,24 @@
     (dissoc this :consumer))
 
   l/EventConsumer
-  (-subscribe! [_ topics]
-    (.subscribe consumer topics))
+  (-subscribe! [_ topics index]
+    (if index
+      (.subscribe consumer
+                  ^java.util.Collection topics
+                  (reify ConsumerRebalanceListener
+                    (onPartitionsAssigned [_ partitions]
+                      (log/info ::ConsumerRebalanceListener :onPartitionsAssigned
+                                :partitions partitions)
+                      (doseq [^TopicPartition partition partitions]
+                        (let [offset (or (index/find-latest-partition-offset index
+                                                                             (.topic partition)
+                                                                             (.partition partition))
+                                         -1)]
+                          (.seek consumer partition (inc offset)))))
+                    (onPartitionsRevoked  [_ partitions]
+                      (log/info ::ConsumerRebalanceListener :onPartitionsRevoked
+                                :partitions partitions))))
+      (.subscribe consumer topics)))
 
   (-consume-onto-channel! [this ch timeout]
     (log/debug ::kafka-consumer-onto-ch! [this ch timeout])

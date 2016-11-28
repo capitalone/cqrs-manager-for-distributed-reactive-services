@@ -44,7 +44,7 @@
 
 (s/def ::producer-record
   (s/keys :req-un [:com.capitalone.commander/topic ::value]
-          :opt-un [::key :com.capitalone.commander/partition]))
+          :opt-un [::key :com.capitalone.commander/partition :com.capitalone.commander/offset]))
 
 (s/fdef send!
         :args (s/cat :producer #(satisfies? EventProducer %)
@@ -56,24 +56,33 @@
 ;; TODO: specs for consumer
 
 (defprotocol EventConsumer
-  (-subscribe! [this topics]
-    "Initialize this consumer, subscribing to each of the
-    topics. Return value isn't meaningful, this function is executed
-    for side effects.")
+  (-subscribe! [this topics index]
+    "Initialize this consumer, subscribing to the given list of
+    topics. If index is nil, consumer will begin with latest values in
+    each partition/shard assigned to this consumer.  If index is
+    non-nil, consumer position is looked up in index per
+    topic/partition assigned to this consumer. Return value isn't
+    meaningful, this function is executed for side effects.")
 
   (-consume-onto-channel! [this channel timeout]
     "Consumes records from the consumer (polling every `timeout` ms)
     and conveys them on the channel"))
 
 (defn subscribe!
-  "Initialize this consumer, subscribing to each of the
-  topics. Return value isn't meaningful, this function is executed
-  for side effects."
-  [consumer topics]
-  (-subscribe! consumer topics))
+  "Initialize this consumer, subscribing to the given list of
+  topics. If index is nil, consumer will begin with latest values in
+  each partition/shard assigned to this consumer.  If index is
+  non-nil, consumer position is looked up in index per topic/partition
+  assigned to this consumer. Return value isn't meaningful, this
+  function is executed for side effects."
+  ([consumer topics]
+   (subscribe! consumer topics nil))
+  ([consumer topics index]
+   (-subscribe! consumer topics index)))
 
 (defn consume-onto-channel!
-  "Consumes records from the consumer and conveys them on the channel.  Returns the channel."
+  "Consumes records from the consumer and conveys them on the channel.
+  Returns the channel."
   ([consumer channel]
    (consume-onto-channel! consumer channel 10000))
   ([consumer channel timeout]

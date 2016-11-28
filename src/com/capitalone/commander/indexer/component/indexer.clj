@@ -18,9 +18,7 @@
             [clojure.java.jdbc :as j]
             [com.capitalone.commander.api :as api]
             [com.capitalone.commander.index :as index]
-            [com.capitalone.commander.log :as l])
-  (:import [org.apache.kafka.clients.consumer Consumer ConsumerRebalanceListener]
-           [org.apache.kafka.common TopicPartition]))
+            [com.capitalone.commander.log :as l]))
 
 (set! *warn-on-reflection* true)
 
@@ -47,24 +45,9 @@
   component/Lifecycle
   (start [this]
     (let [ch (a/chan 1)
-          ^Consumer consumer (:consumer kafka-consumer)
-          ^java.util.Collection topics [commands-topic events-topic]]
-      (.subscribe consumer
-                  topics
-                  (reify ConsumerRebalanceListener
-                    (onPartitionsAssigned [_ partitions]
-                      (log/info ::ConsumerRebalanceListener :onPartitionsAssigned
-                                :partitions partitions)
-                      (doseq [^TopicPartition partition partitions]
-                        (let [offset (or (index/find-latest-partition-offset index
-                                                                         (.topic partition)
-                                                                         (.partition partition))
-                                         -1)]
-                          (.seek consumer partition (inc offset)))))
-                    (onPartitionsRevoked  [_ partitions]
-                      (log/info ::ConsumerRebalanceListener :onPartitionsRevoked
-                                :partitions partitions))))
-
+          topics [commands-topic events-topic]]
+      ;; TODO: move this into c.c.c.log.kafka implementation
+      (l/subscribe! kafka-consumer topics index)
       (l/consume-onto-channel! kafka-consumer ch)
       (record-commands-and-events! index commands-topic events-topic ch)
       (assoc this :ch ch)))
