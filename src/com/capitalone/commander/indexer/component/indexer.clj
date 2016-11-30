@@ -46,9 +46,7 @@
   (start [this]
     (let [ch (a/chan 1)
           topics [commands-topic events-topic]]
-      ;; TODO: move this into c.c.c.log.kafka implementation
-      (l/subscribe! kafka-consumer topics index)
-      (l/consume-onto-channel! kafka-consumer ch)
+      (l/consume-onto-channel! kafka-consumer topics index ch)
       (record-commands-and-events! index commands-topic events-topic ch)
       (assoc this :ch ch)))
   (stop [this]

@@ -119,7 +119,8 @@
     (dissoc this :consumer))
 
   l/EventConsumer
-  (-subscribe! [_ topics index]
+  (-consume-onto-channel! [this topics index ch timeout]
+    (log/debug ::kafka-consumer-onto-ch! [this topics index ch timeout])
     (if index
       (.subscribe consumer
                   ^java.util.Collection topics
@@ -136,10 +137,7 @@
                     (onPartitionsRevoked  [_ partitions]
                       (log/info ::ConsumerRebalanceListener :onPartitionsRevoked
                                 :partitions partitions))))
-      (.subscribe consumer topics)))
-
-  (-consume-onto-channel! [this ch timeout]
-    (log/debug ::kafka-consumer-onto-ch! [this ch timeout])
+      (.subscribe consumer topics))
     (a/thread
       (log/debug ::kafka-consumer-onto-ch! :consumer
                  :consumer consumer)

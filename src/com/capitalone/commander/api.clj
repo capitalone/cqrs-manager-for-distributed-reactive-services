@@ -313,13 +313,11 @@
 
           commands-ch    (a/chan 1)
           commands-mult  (a/mult commands-ch)]
-      (l/subscribe! log-consumer [commands-topic events-topic])
-
       (a/sub pub commands-topic commands-ch)
       (a/sub pub events-topic events-ch)
       (a/tap events-mult events-ch-copy)
 
-      (l/consume-onto-channel! log-consumer ch)
+      (l/consume-onto-channel! log-consumer [commands-topic events-topic] ch)
 
       (assoc this
              :ch            ch

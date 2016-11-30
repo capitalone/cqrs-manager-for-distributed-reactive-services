@@ -54,37 +54,29 @@
         :fn   #(= (-> % :args :ch) (-> % :ret)))
 
 ;; TODO: specs for consumer
-
 (defprotocol EventConsumer
-  (-subscribe! [this topics index]
+  (-consume-onto-channel! [this topics index channel timeout]
     "Initialize this consumer, subscribing to the given list of
     topics. If index is nil, consumer will begin with latest values in
     each partition/shard assigned to this consumer.  If index is
     non-nil, consumer position is looked up in index per
-    topic/partition assigned to this consumer. Return value isn't
-    meaningful, this function is executed for side effects.")
+    topic/partition assigned to this consumer. Finally, consumes
+    records from the consumer (polling every `timeout` ms, if
+    applicable to event source) and conveys them on the channel.
+    Returns the given channel."))
 
-  (-consume-onto-channel! [this channel timeout]
-    "Consumes records from the consumer (polling every `timeout` ms)
-    and conveys them on the channel"))
-
-(defn subscribe!
+(defn consume-onto-channel!
   "Initialize this consumer, subscribing to the given list of
   topics. If index is nil, consumer will begin with latest values in
   each partition/shard assigned to this consumer.  If index is
   non-nil, consumer position is looked up in index per topic/partition
-  assigned to this consumer. Return value isn't meaningful, this
-  function is executed for side effects."
-  ([consumer topics]
-   (subscribe! consumer topics nil))
-  ([consumer topics index]
-   (-subscribe! consumer topics index)))
-
-(defn consume-onto-channel!
-  "Consumes records from the consumer and conveys them on the channel.
-  Returns the channel."
-  ([consumer channel]
-   (consume-onto-channel! consumer channel 10000))
-  ([consumer channel timeout]
-   (-consume-onto-channel! consumer channel timeout)
+  assigned to this consumer. Finally, consumes records from the
+  consumer (polling every `timeout` ms, if applicable to event source)
+  and conveys them on the channel.  Returns the given channel."
+  ([consumer topics channel]
+   (consume-onto-channel! consumer topics nil channel))
+  ([consumer topics index channel]
+   (consume-onto-channel! consumer topics index channel 10000))
+  ([consumer topics index channel timeout]
+   (-consume-onto-channel! consumer topics index channel timeout)
    channel))
