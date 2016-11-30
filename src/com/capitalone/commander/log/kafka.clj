@@ -84,6 +84,8 @@
 
 (defmethod l/construct-producer :kafka
   [producer-config]
+  (log/info ::l/construct-producer :kafka
+            :config producer-config)
   (let [{:keys [servers timeout-ms client-id config key-serializer value-serializer]
          :or {config           {}
               key-serializer   (FressianSerializer.)
@@ -170,6 +172,8 @@
 
 (defmethod l/construct-consumer :kafka
   [consumer-config]
+  (log/info ::l/construct-consumer :kafka
+            :config consumer-config)
   (let [{:keys [servers group-id client-id config key-deserializer value-deserializer]
          :or {config             {}
               key-deserializer   (FressianDeserializer.)

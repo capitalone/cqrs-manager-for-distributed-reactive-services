@@ -33,7 +33,7 @@
             ShutdownInput
             ProcessRecordsInput
             InitializationInput]
-           [com.amazonaws.services.kinesis.clientlibrary.lib.worker KinesisClientLibConfiguration ShutdownReason InitialPositionInStream Worker]
+           [com.amazonaws.services.kinesis.clientlibrary.lib.worker KinesisClientLibConfiguration ShutdownReason InitialPositionInStream Worker Worker$Builder]
            [java.net InetAddress]
            [java.util UUID]
            [com.amazonaws.services.kinesis.clientlibrary.interfaces IRecordProcessorCheckpointer]
@@ -84,6 +84,8 @@
 
 (defmethod l/construct-producer :kinesis
   [producer-config]
+  (log/info ::l/construct-producer :kinesis
+            :config producer-config)
   (map->ProducerComponent {}))
 
 (def NUM_RETRIES 10)
@@ -170,15 +172,17 @@
   IRecordProcessorFactory
   (createProcessor [this]
     (log/info :msg "Creating Processor" :this this)
-    (Consumer. nil nil stream channel)))
+    (Consumer. nil 0 stream channel)))
 
-(defrecord ConsumerComponent [^String worker-id ^String application-name consumers]
+(defrecord ConsumerComponent [^String worker-id ^String application-name workers]
   c/Lifecycle
   (start [this]
     (java.security.Security/setProperty "networkaddress.cache.ttl" "60")
-    this)
+    (assoc this :workers (atom #{})))
   (stop [this]
-    this)
+    (doseq [^Worker worker @workers]
+      @(.requestShutdown worker))
+    (dissoc this :workers))
 
   ;; TODO: manage offsets manually within index (if present), rather than by checkpoint-per-time-period
   l/EventConsumer
@@ -193,10 +197,13 @@
                                                    topic
                                                    (DefaultAWSCredentialsProviderChain.)
                                                    worker-id)
-            worker (Worker. (RecordFactory. topic ch)
-                            (if index
-                              (.withInitialPositionInStream config InitialPositionInStream/TRIM_HORIZON)
-                              (.withInitialPositionInStream config InitialPositionInStream/LATEST)))]
+            worker (-> (Worker$Builder.)
+                       (.recordProcessorFactory (RecordFactory. topic ch))
+                       (.config (if index
+                                  (.withInitialPositionInStream config InitialPositionInStream/TRIM_HORIZON)
+                                  (.withInitialPositionInStream config InitialPositionInStream/LATEST)))
+                       .build)]
+        (swap! workers conj worker)
         (a/thread
           (try
             (.run worker)
@@ -212,6 +219,8 @@
                              .getCanonicalHostName
                              (str ":" (UUID/randomUUID)))}
     :as consumer-config}]
+  (log/info ::l/construct-consumer :kinesis
+            :config consumer-config)
   (assert group-id)
   (map->ConsumerComponent {:worker-id        worker-id
                            :application-name group-id}))

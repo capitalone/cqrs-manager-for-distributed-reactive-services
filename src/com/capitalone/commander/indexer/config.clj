@@ -25,6 +25,7 @@
 (def environ
   {:indexer      {:commands-topic (:commands-topic env)
                   :events-topic   (:events-topic env)}
-   :log-consumer {:servers  (:kafka-servers env)
+   :log-consumer {:type     (some-> env :log-type keyword)
+                  :servers  (:kafka-servers env)
                   :group-id (:indexer-group-id env)}
    :index        {:connection-uri (:database-uri env)}})
