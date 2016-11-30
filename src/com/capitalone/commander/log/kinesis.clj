@@ -38,7 +38,6 @@
            [java.util UUID]
            [com.amazonaws.services.kinesis.clientlibrary.interfaces IRecordProcessorCheckpointer]
            [com.amazonaws.auth DefaultAWSCredentialsProviderChain]
-           [com.sun.tools.classfile LineNumberTable_attribute$Entry]
            [com.amazonaws.services.kinesis.clientlibrary.exceptions ShutdownException ThrottlingException]))
 
 (set! *warn-on-reflection* true)
