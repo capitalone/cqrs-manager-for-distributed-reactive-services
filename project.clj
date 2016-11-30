@@ -52,6 +52,10 @@
                  ;; Kafka
                  [org.apache.kafka/kafka-clients "0.10.0.1"]
 
+                 ;; Kinesis
+                 [com.amazonaws/aws-java-sdk-kinesis "1.11.60"]
+                 [com.amazonaws/amazon-kinesis-client "1.7.2"]
+
                  ;; Logging
                  [ch.qos.logback/logback-classic "1.1.7"
                   :exclusions [org.slf4j/slf4j-api]]
