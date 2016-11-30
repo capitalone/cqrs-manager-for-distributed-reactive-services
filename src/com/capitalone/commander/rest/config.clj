@@ -17,22 +17,26 @@
 (set! *warn-on-reflection* true)
 
 (def defaults
-  {:http           {:port          3000
-                    :resource-path "/public"}
-   :grpc           {:port 8980}
-   :api            {:commands-topic  "commands"
-                    :events-topic    "events"
-                    :sync-timeout-ms 5000}
-   :kafka-producer {:timeout-ms 2000}
-   :kafka-consumer {:client-id "commander-rest-consumer"}})
+  {:http         {:port          3000
+                  :resource-path "/public"}
+   :grpc         {:port 8980}
+   :api          {:commands-topic  "commands"
+                  :events-topic    "events"
+                  :sync-timeout-ms 5000}
+   :log-producer {:type       :kafka
+                  :timeout-ms 2000}
+   :log-consumer {:type      :kafka
+                  :client-id "commander-rest-consumer"}})
 
 (def environ
-  {:http           {:port (some-> env ^String (:port) Integer.)}
-   :grpc           {:port (some-> env ^String (:grpc-port) Integer.)}
-   :api            {:commands-topic  (:commands-topic env)
-                    :events-topic    (:events-topic env)
-                    :sync-timeout-ms (some-> env ^String (:sync-timeout-ms) Integer.)}
-   :kafka-consumer {:servers  (:kafka-servers env)
-                    :group-id (:rest-group-id env)}
-   :index          {:connection-uri (:database-uri env)}
-   :kafka-producer {:servers (:kafka-servers env)}})
+  {:http         {:port (some-> env ^String (:port) Integer.)}
+   :grpc         {:port (some-> env ^String (:grpc-port) Integer.)}
+   :api          {:commands-topic  (:commands-topic env)
+                  :events-topic    (:events-topic env)
+                  :sync-timeout-ms (some-> env ^String (:sync-timeout-ms) Integer.)}
+   :log-consumer {:type     (some-> env :log-type keyword)
+                  :servers  (:kafka-servers env)
+                  :group-id (:rest-group-id env)}
+   :index        {:connection-uri (:database-uri env)}
+   :log-producer {:type    (some-> env :log-type keyword)
+                  :servers (:kafka-servers env)}})

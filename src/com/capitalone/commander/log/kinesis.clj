@@ -83,8 +83,7 @@
                            (log/error :exception t)))))
     result-ch))
 
-(defn construct-producer
-  "Constructs and returns a Kinesis EventProducer according to config map."
+(defmethod l/construct-producer :kinesis
   [producer-config]
   (map->ProducerComponent {}))
 
@@ -208,13 +207,11 @@
     ch))
 
 ;; TODO: spec for consumer-config, assert values conform prior to constructing ConsumerComponent
-(defn construct-consumer
-  "Creates a KafkaConsumer for the given config map (must include at
-  least :servers and :group-id)"
+(defmethod l/construct-consumer :kinesis
   [{:keys [worker-id group-id]
-    :or   {worker-id (-> (InetAddress/getLocalHost)
-                         .getCanonicalHostName
-                         (str ":" (UUID/randomUUID)))}
+    :or   {worker-id (some-> (InetAddress/getLocalHost)
+                             .getCanonicalHostName
+                             (str ":" (UUID/randomUUID)))}
     :as consumer-config}]
   (assert group-id)
   (map->ConsumerComponent {:worker-id        worker-id

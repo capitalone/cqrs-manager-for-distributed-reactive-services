@@ -41,12 +41,12 @@
           (log/error :msg "Error indexing event" :msg msg :exception e)))
       (recur))))
 
-(defrecord Indexer [index kafka-consumer commands-topic events-topic ch]
+(defrecord Indexer [index log-consumer commands-topic events-topic ch]
   component/Lifecycle
   (start [this]
     (let [ch (a/chan 1)
           topics [commands-topic events-topic]]
-      (l/consume-onto-channel! kafka-consumer topics index ch)
+      (l/consume-onto-channel! log-consumer topics index ch)
       (record-commands-and-events! index commands-topic events-topic ch)
       (assoc this :ch ch)))
   (stop [this]
@@ -56,4 +56,4 @@
 (defn construct-indexer
   [config]
   (map->Indexer
-   (select-keys config [:kafka-consumer-config :commands-topic :events-topic])))
+   (select-keys config [:commands-topic :events-topic])))

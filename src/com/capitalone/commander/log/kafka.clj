@@ -82,10 +82,7 @@
                 (a/put! result-ch (or ret e))))))
     result-ch))
 
-(defn construct-producer
-  "Constructs and returns a Producer according to config map (See
-  https://kafka.apache.org/documentation.html#producerconfigs for
-  details)."
+(defmethod l/construct-producer :kafka
   [producer-config]
   (let [{:keys [servers timeout-ms client-id config key-serializer value-serializer]
          :or {config           {}
@@ -120,7 +117,7 @@
 
   l/EventConsumer
   (-consume-onto-channel! [this topics index ch timeout]
-    (log/debug ::kafka-consumer-onto-ch! [this topics index ch timeout])
+    (log/debug ::consume-onto-channel! [this topics index ch timeout])
     (if index
       (.subscribe consumer
                   ^java.util.Collection topics
@@ -139,11 +136,11 @@
                                 :partitions partitions))))
       (.subscribe consumer topics))
     (a/thread
-      (log/debug ::kafka-consumer-onto-ch! :consumer
+      (log/debug ::consume-onto-channel! :consumer
                  :consumer consumer)
       (try
         (loop []
-          (log/trace ::kafka-consumer-onto-ch! :loop
+          (log/trace ::consume-onto-channel! :loop
                      :consumer consumer)
           (if (p/closed? ch)
             :done
@@ -155,25 +152,23 @@
                                   :partition (.partition record)
                                   :offset    (.offset record)
                                   :timestamp (.timestamp record)}]
-                  (log/debug ::kafka-consumer-onto-ch! :record-received :record-map record-map)
+                  (log/debug ::consume-onto-channel! :record-received :record-map record-map)
                   (when-not (a/>!! ch record-map)
-                    (log/debug ::kafka-consumer-onto-ch! :destination-closed :ch ch))))
+                    (log/debug ::consume-onto-channel! :destination-closed :ch ch))))
               (recur))))
         (catch WakeupException e
-          (log/error ::kafka-consumer-onto-ch! "Wakeup received from another thread, closing."
+          (log/error ::consume-onto-channel! "Wakeup received from another thread, closing."
                      :exception e))
         (catch Exception e
-          (log/error ::kafka-consumer-onto-ch! "Exception while polling Kafka, and re-throwing."
+          (log/error ::consume-onto-channel! "Exception while polling Kafka, and re-throwing."
                      :exception e)
           (throw e))
         (finally
-          (log/info ::kafka-consumer-onto-ch! "Cleaning up Kafka consumer and closing.")
+          (log/info ::consume-onto-channel! "Cleaning up Kafka consumer and closing.")
           (.close consumer)
           :done)))))
 
-(defn construct-consumer
-  "Creates a KafkaConsumer for the given config map (must include at
-  least :servers and :group-id)"
+(defmethod l/construct-consumer :kafka
   [consumer-config]
   (let [{:keys [servers group-id client-id config key-deserializer value-deserializer]
          :or {config             {}

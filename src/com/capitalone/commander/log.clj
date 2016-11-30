@@ -53,6 +53,8 @@
         :ret  ::ReadPort
         :fn   #(= (-> % :args :ch) (-> % :ret)))
 
+(defmulti construct-producer "Builds a Log producer according to the :type key in the given config map" :type)
+
 ;; TODO: specs for consumer
 (defprotocol EventConsumer
   (-consume-onto-channel! [this topics index channel timeout]
@@ -80,3 +82,5 @@
   ([consumer topics index channel timeout]
    (-consume-onto-channel! consumer topics index channel timeout)
    channel))
+
+(defmulti construct-consumer "Builds a Log consumer according to the :type key in the given config map" :type)

@@ -20,7 +20,9 @@
             [com.capitalone.commander.rest.component.pedestal :refer [construct-pedestal-server]]
             [com.capitalone.commander.grpc :refer [construct-grpc-server]]
             [com.capitalone.commander.index.jdbc :refer [construct-jdbc-db]]
-            [com.capitalone.commander.log.kafka :refer [construct-producer construct-consumer]]
+            [com.capitalone.commander.log :refer [construct-producer construct-consumer]]
+            com.capitalone.commander.log.kafka
+            com.capitalone.commander.log.kinesis
             [com.capitalone.commander.api :refer [construct-commander-api]]))
 
 (set! *warn-on-reflection* true)
@@ -39,8 +41,8 @@
          :http           (construct-pedestal-server (:http config))
          :routes         (construct-routes)
          :index          (construct-jdbc-db  (:index config))
-         :log-consumer   (construct-consumer (:kafka-consumer config))
-         :log-producer   (construct-producer (:kafka-producer config))
+         :log-consumer   (construct-consumer (:log-consumer config))
+         :log-producer   (construct-producer (:log-producer config))
          :api            (construct-commander-api (:api config)))
         (component/system-using
          {:http           [:routes]

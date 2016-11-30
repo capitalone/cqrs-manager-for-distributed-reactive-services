@@ -16,21 +16,23 @@
             [meta-merge.core :refer [meta-merge]]
             [io.pedestal.log :as log]
             [com.capitalone.commander.index.jdbc :refer [construct-jdbc-db]]
-            [com.capitalone.commander.log.kafka :refer [construct-consumer]]
+            [com.capitalone.commander.log :refer [construct-consumer]]
+            com.capitalone.commander.log.kafka
+            com.capitalone.commander.log.kinesis
             [com.capitalone.commander.indexer.component.indexer :refer [construct-indexer]]))
 
 (set! *warn-on-reflection* true)
 
 (def base-config
-  {:indexer {:kafka-consumer-config {"enable.auto.commit" false}}})
+  {})
 
 (defn new-system [config]
   (let [config (meta-merge config base-config)]
     (log/info :msg "Creating system" :config config)
     (-> (component/system-map
-         :consumer (construct-consumer (:kafka-consumer config))
+         :consumer (construct-consumer (:log-consumer config))
          :index    (construct-jdbc-db (:index config))
          :indexer  (construct-indexer (:indexer config)))
         (component/system-using
-         {:indexer {:index          :index
-                    :kafka-consumer :consumer}}))))
+         {:indexer {:index        :index
+                    :log-consumer :consumer}}))))

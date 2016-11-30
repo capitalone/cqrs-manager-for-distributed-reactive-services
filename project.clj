@@ -77,18 +77,18 @@
                              :repl-options {:init-ns user}}
              :profiles/dev  {}
              :profiles/test {}
-             :project/dev   {:dependencies      [[reloaded.repl "0.2.2"]
-                                                 [org.clojure/tools.namespace "0.2.11"]
-                                                 [org.clojure/tools.nrepl "0.2.12"]
-                                                 [eftest "0.1.1"]
-                                                 [org.clojure/test.check "0.9.0"]]
-                             :plugins           [[lein-environ "1.0.2"]
-                                                 [lein-auto "0.1.2"]]
-                             :env               {:database-uri     "jdbc:postgresql://localhost/commander?user=commander&password=commander"
-                                                 :kafka-servers    "localhost:9092"
-                                                 :indexer-group-id "dev-indexer"
-                                                 :rest-group-id    "dev-rest"}}
+             :project/dev   {:dependencies [[reloaded.repl "0.2.2"]
+                                            [org.clojure/tools.namespace "0.2.11"]
+                                            [org.clojure/tools.nrepl "0.2.12"]
+                                            [eftest "0.1.1"]
+                                            [org.clojure/test.check "0.9.0"]]
+                             :plugins      [[lein-environ "1.0.2"]
+                                            [lein-auto "0.1.2"]]
+                             :env          {:database-uri     "jdbc:postgresql://localhost/commander?user=commander&password=commander"
+                                            :kafka-servers    "localhost:9092"
+                                            :indexer-group-id "commander-dev-indexer"
+                                            :rest-group-id    "commander-dev-rest"}}
              :project/test  {:env {:database-uri     "jdbc:postgresql://localhost/commander?user=commander&password=commander"
                                    :kafka-servers    "localhost:9092"
-                                   :indexer-group-id "dev-indexer"
-                                   :rest-group-id    "dev-rest"}}})
+                                   :indexer-group-id "commander-dev-indexer"
+                                   :rest-group-id    "commander-dev-rest"}}})
