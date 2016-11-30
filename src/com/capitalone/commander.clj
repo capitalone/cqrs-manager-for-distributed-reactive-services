@@ -19,8 +19,10 @@
 (s/def ::id uuid?)
 (s/def ::timestamp (s/int-in 0 Long/MAX_VALUE))
 (s/def ::topic string?)
-(s/def ::partition (s/int-in 0 Integer/MAX_VALUE))
-(s/def ::offset (s/int-in 0 Long/MAX_VALUE))
+(s/def ::partition (s/or :int (s/int-in 0 Integer/MAX_VALUE)
+                         :string string?))
+(s/def ::offset (s/or :long   (s/int-in 0 Long/MAX_VALUE)
+                      :string string?))
 (s/def ::children uuid?)
 
 ;; TODO: event type/schema registry

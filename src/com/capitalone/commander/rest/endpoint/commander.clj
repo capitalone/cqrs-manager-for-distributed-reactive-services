@@ -64,8 +64,8 @@
          :id s/Uuid
          :timestamp s/Int
          :topic s/Str
-         :partition s/Int
-         :offset s/Int
+         :partition (s/either s/Int s/Str)
+         :offset (s/either s/Int s/Str)
 
          (s/optional-key :children) [s/Uuid]))
 

@@ -42,9 +42,11 @@
 (s/def ::key :com.capitalone.commander/id)
 (s/def ::value any?)
 
+(s/def ::offset (s/nilable :com.capitalone.commander/offset))
+
 (s/def ::producer-record
   (s/keys :req-un [:com.capitalone.commander/topic ::value]
-          :opt-un [::key :com.capitalone.commander/partition :com.capitalone.commander/offset]))
+          :opt-un [::key :com.capitalone.commander/partition ::offset]))
 
 (s/fdef send!
         :args (s/cat :producer #(satisfies? EventProducer %)
