@@ -23,6 +23,7 @@
    :api          {:commands-topic  "commands"
                   :events-topic    "events"
                   :sync-timeout-ms 5000}
+   :index        {:type :jdbc}
    :log-producer {:type       :kafka
                   :timeout-ms 2000}
    :log-consumer {:type      :kafka
@@ -37,6 +38,7 @@
    :log-consumer {:type     (some-> env :log-type keyword)
                   :servers  (:kafka-servers env)
                   :group-id (:rest-group-id env)}
-   :index        {:connection-uri (:database-uri env)}
+   :index        {:type    (some-> env :index-type keyword)
+                  :connection-uri (:database-uri env)}
    :log-producer {:type    (some-> env :log-type keyword)
                   :servers (:kafka-servers env)}})

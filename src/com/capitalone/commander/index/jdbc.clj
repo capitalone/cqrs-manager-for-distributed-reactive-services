@@ -47,11 +47,10 @@
       event-for-insert
       (assoc :command true)))
 
-(defrecord JdbcIndex [db-spec connection init-fn]
+(defrecord JdbcIndex [db-spec connection]
   component/Lifecycle
   (start [component]
-    (let [conn (or connection (j/get-connection db-spec))
-          _    (when init-fn (init-fn db-spec))]
+    (let [conn (or connection (j/get-connection db-spec))]
       (assoc component :connection conn)))
   (stop [component]
     (when connection (.close ^java.lang.AutoCloseable connection))
@@ -116,11 +115,10 @@
                      {:entities (j/quoted \")
                       :transaction? false})))
 
-(defn construct-jdbc-db
-  ([db-spec]
-   (map->JdbcIndex {:db-spec db-spec}))
-  ([db-spec init-fn]
-   (map->JdbcIndex {:db-spec db-spec :init-fn init-fn})))
+(defmethod index/construct-index :jdbc
+  [config]
+  (log/info ::index/construct-index :jdbc :config config)
+  (map->JdbcIndex {:db-spec (dissoc config :type)}))
 
 ;;;; Index Bootstrap & Migrations
 

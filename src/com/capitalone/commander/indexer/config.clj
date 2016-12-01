@@ -19,6 +19,7 @@
 (def defaults
   {:indexer      {:commands-topic "commands"
                   :events-topic   "events"}
+   :index        {:type :jdbc}
    :log-consumer {:type      :kafka
                   :client-id "commander-indexer-consumer"}})
 
@@ -28,4 +29,5 @@
    :log-consumer {:type     (some-> env :log-type keyword)
                   :servers  (:kafka-servers env)
                   :group-id (:indexer-group-id env)}
-   :index        {:connection-uri (:database-uri env)}})
+   :index        {:type           (some-> env :index-type keyword)
+                  :connection-uri (:database-uri env)}})

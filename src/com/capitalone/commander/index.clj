@@ -170,3 +170,5 @@
                      :event (s/or :single ::commander/event
                                   :collection (s/every ::commander/event)))
         :ret boolean?)
+
+(defmulti construct-index :type)

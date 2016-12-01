@@ -15,7 +15,9 @@
   (:require [com.stuartsierra.component :as component]
             [meta-merge.core :refer [meta-merge]]
             [io.pedestal.log :as log]
-            [com.capitalone.commander.index.jdbc :refer [construct-jdbc-db]]
+            [com.capitalone.commander.index :refer [construct-index]]
+            com.capitalone.commander.index.jdbc
+            com.capitalone.commander.index.dynamodb
             [com.capitalone.commander.log :refer [construct-consumer]]
             com.capitalone.commander.log.kafka
             com.capitalone.commander.log.kinesis
@@ -31,7 +33,7 @@
     (log/info :msg "Creating system" :config config)
     (-> (component/system-map
          :consumer (construct-consumer (:log-consumer config))
-         :index    (construct-jdbc-db (:index config))
+         :index    (construct-index (:index config))
          :indexer  (construct-indexer (:indexer config)))
         (component/system-using
          {:indexer {:index        :index
