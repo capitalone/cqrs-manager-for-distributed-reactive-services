@@ -12,12 +12,14 @@
 ;; See the License for the specific language governing permissions and limitations under the License.
 
 (ns com.capitalone.commander.log.kinesis
+  (:refer-clojure :exclude [partition])
   (:require [clojure.spec :as s]
             [clojure.core.async :as a]
             [clojure.data.fressian :as fressian]
+            [io.pedestal.log :as log]
             [com.stuartsierra.component :as c]
             [com.capitalone.commander.log :as l]
-            [io.pedestal.log :as log])
+            [clojure.string :as string])
   (:import [com.amazonaws.services.kinesis
             AmazonKinesisAsync
             AmazonKinesisAsyncClient]
@@ -50,7 +52,7 @@
     (doto (PutRecordRequest.)
       (.setStreamName (str topic))
       (.setPartitionKey (when key (str key)))
-      (.setExplicitHashKey (str partition))
+      (.setExplicitHashKey (when partition (str partition)))
       (.setSequenceNumberForOrdering offset)
       (.setData (fressian/write value :footer? true)))))
 
@@ -58,26 +60,32 @@
         :args (s/cat :record ::l/producer-record)
         :ret #(instance? PutRecordRequest %))
 
-(defrecord ProducerComponent [^AmazonKinesisAsync producer last-offset]
+(defn- shard-id->partition
+  [shard-id]
+  (string/replace-first shard-id "shardId-" ""))
+
+(defrecord ProducerComponent [^AmazonKinesisAsync producer last-offsets]
   c/Lifecycle
   (start [this]
     (assoc this :producer (AmazonKinesisAsyncClient.)
-                :last-offset (atom nil)))
+                :last-offsets (atom {})))
   (stop  [this]
     (when producer (.shutdown producer))
-    (dissoc this :producer))
+    (dissoc this :producer :last-offsets))
 
   l/EventProducer
   (-send! [this record result-ch]
     (let [{:keys [topic value key partition offset]} record]
       (.putRecordAsync producer
-                       (producer-record (assoc record :offset @last-offset))
+                       (producer-record (assoc record :offset (get @last-offsets topic)))
                        (reify AsyncHandler
                          (onSuccess [_ _ result]
-                           (a/put! result-ch {:offset    (.getSequenceNumber ^PutRecordResult result)
-                                              :partition (.getShardId ^PutRecordResult result)
-                                              :topic     (:topic record)
-                                              :timestamp nil}))
+                           (let [sequence-number (.getSequenceNumber ^PutRecordResult result)]
+                             (swap! last-offsets assoc topic sequence-number)
+                             (a/put! result-ch {:offset    sequence-number
+                                                :partition (-> ^PutRecordResult result .getShardId shard-id->partition)
+                                                :topic     topic
+                                                :timestamp (System/currentTimeMillis)})))
                          (onError [_ t]
                            (log/error :exception t)))))
     result-ch))
@@ -145,12 +153,12 @@
                 :record-count (count records))
       (doseq [^Record record records]
         (try
-          (let [record-map {:key       (.getPartitionKey record)
+          (let [record-map {:key       (UUID/fromString (.getPartitionKey record))
                             :value     (-> record .getData fressian/read)
                             :topic     stream
-                            :partition shard-id
+                            :partition (shard-id->partition shard-id)
                             :offset    (.getSequenceNumber record)
-                            :timestamp (.getApproximateArrivalTimestamp record)}]
+                            :timestamp (-> record .getApproximateArrivalTimestamp .getTime)}]
             (a/put! channel record-map))
           (catch Throwable t
             (log/error :msg "Error when processing record"
@@ -174,7 +182,7 @@
     (log/info :msg "Creating Processor" :this this)
     (Consumer. nil 0 stream channel)))
 
-(defrecord ConsumerComponent [^String worker-id ^String application-name workers]
+(defrecord ConsumerComponent [^String client-id ^String application-name workers]
   c/Lifecycle
   (start [this]
     (java.security.Security/setProperty "networkaddress.cache.ttl" "60")
@@ -192,11 +200,11 @@
       (log/info :phase :worker-config
                 :application-name application-name
                 :stream topic
-                :worker-id worker-id)
+                :client-id client-id)
       (let [config (KinesisClientLibConfiguration. application-name
                                                    topic
                                                    (DefaultAWSCredentialsProviderChain.)
-                                                   worker-id)
+                                                   (str topic ":" client-id))
             worker (-> (Worker$Builder.)
                        (.recordProcessorFactory (RecordFactory. topic ch))
                        (.config (if index
@@ -214,13 +222,13 @@
 
 ;; TODO: spec for consumer-config, assert values conform prior to constructing ConsumerComponent
 (defmethod l/construct-consumer :kinesis
-  [{:keys [worker-id group-id]
-    :or   {worker-id (some-> (InetAddress/getLocalHost)
+  [{:keys [client-id group-id]
+    :or   {client-id (some-> (InetAddress/getLocalHost)
                              .getCanonicalHostName
                              (str ":" (UUID/randomUUID)))}
     :as consumer-config}]
   (log/info ::l/construct-consumer :kinesis
             :config consumer-config)
   (assert group-id)
-  (map->ConsumerComponent {:worker-id        worker-id
+  (map->ConsumerComponent {:client-id        client-id
                            :application-name group-id}))
