@@ -108,8 +108,8 @@
                               (.checkpoint checkpointer)
                               false
                               (catch ShutdownException e
-                                (log/error :msg "Shutting down interrupted checkpointing"
-                                           :exception e)
+                                (log/info :msg "Shutting down interrupted checkpointing"
+                                          :exception e)
                                 false)
                               (catch IllegalStateException e
                                 (log/error :msg "Cannot save checkpoint to the DynamoDB table used by the Amazon Kinesis Client Library."
@@ -142,13 +142,17 @@
   IRecordProcessor
   (^void initialize [this ^InitializationInput input]
     (let [shard (.getShardId input)]
-      (log/info :msg "Initializing record processor for shard" :shard shard)
+      (log/info :msg "Initializing record processor for shard"
+                :stream stream
+                :shard shard
+                :channel channel)
       (set! shard-id shard)))
 
   ;; TODO: retry with backoff
   (^void processRecords [this ^ProcessRecordsInput input]
     (let [records (.getRecords input)]
       (log/info :msg "Processing records from shard"
+                :stream stream
                 :shard shard-id
                 :record-count (count records))
       (doseq [^Record record records]
@@ -159,7 +163,13 @@
                             :partition (shard-id->partition shard-id)
                             :offset    (.getSequenceNumber record)
                             :timestamp (-> record .getApproximateArrivalTimestamp .getTime)}]
-            (a/put! channel record-map))
+            (log/debug :msg "Sending record map on channel..."
+                       :channel channel
+                       :record-map record-map)
+            (a/put! channel record-map)
+            (log/debug :msg "record sent"
+                       :channel channel
+                       :record-map record-map))
           (catch Throwable t
             (log/error :msg "Error when processing record"
                        :exception t
@@ -168,6 +178,7 @@
 
       ;; Checkpoint once every checkpoint interval.
       (when (> (System/currentTimeMillis) next-checkpoint-msec)
+        (log/info :msg "About to checkpoint" :stream stream :shard-id shard-id)
         (checkpoint (.getCheckpointer input) shard-id)
         (set! next-checkpoint-msec (+ (System/currentTimeMillis) CHECKPOINT_INTERVAL_MILLIS)))))
 
@@ -176,7 +187,7 @@
     (when (= (.getShutdownReason input) ShutdownReason/TERMINATE)
       (-> input .getCheckpointer (checkpoint shard-id)))))
 
-(deftype RecordFactory [stream channel]
+(defrecord RecordFactory [stream channel]
   IRecordProcessorFactory
   (createProcessor [this]
     (log/info :msg "Creating Processor" :this this)

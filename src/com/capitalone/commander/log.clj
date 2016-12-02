@@ -14,7 +14,8 @@
 (ns com.capitalone.commander.log
   (:require [clojure.spec :as s]
             [clojure.core.async :as a]
-            [clojure.core.async.impl.protocols :as p]))
+            [clojure.core.async.impl.protocols :as p]
+            [io.pedestal.log :as log]))
 
 (set! *warn-on-reflection* true)
 
@@ -28,6 +29,7 @@
   ([producer record]
    (send! producer record (a/promise-chan)))
   ([producer record result-ch]
+   (log/info ::send! [producer record result-ch])
    (-send! producer record result-ch)))
 
 (s/def ::ReadPort  #(satisfies? p/ReadPort %))
@@ -82,6 +84,7 @@
   ([consumer topics index channel]
    (consume-onto-channel! consumer topics index channel 10000))
   ([consumer topics index channel timeout]
+   (log/info ::consume-onto-channel! [consumer topics index channel timeout])
    (-consume-onto-channel! consumer topics index channel timeout)
    channel))
 

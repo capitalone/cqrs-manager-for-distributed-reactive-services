@@ -26,11 +26,11 @@
   "Records all commands and events arriving on ch to the given index
   component. Returns the go-loop channel that will convey :done when ch is closed."
   [index commands-topic events-topic ch]
-  (log/debug ::record-events! [index commands-topic events-topic ch])
+  (log/debug ::record-commands-and-events! [index commands-topic events-topic ch])
   (a/go-loop []
     (when-some [msg (a/<! ch)]
       (try
-        (log/debug ::record-events! :msg :msg msg)
+        (log/debug ::record-commands-and-events! :msg :msg msg)
         (condp = (:topic msg)
           events-topic   (index/insert-events! index (api/event-map msg))
           commands-topic (index/insert-commands! index (api/command-map msg))
