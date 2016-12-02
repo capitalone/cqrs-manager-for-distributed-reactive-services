@@ -67,7 +67,7 @@
   :javac-options     ["-target" "1.8" "-source" "1.8"]
   :profiles {:debug         {:debug      true
                              :injections [(prn (into {} (System/getProperties)))]}
-             :dev           [:project/dev  :profiles/dev]
+             :dev           [:project/dev :profiles/dev]
              :test          [:project/test :profiles/test]
              :uberjar       {:target-path  "target/%s/"
                              :aot          :all
@@ -84,7 +84,12 @@
                                             [org.clojure/test.check "0.9.0"]]
                              :plugins      [[lein-environ "1.0.2"]
                                             [lein-auto "0.1.2"]]
-                             :env          {:database-uri     "jdbc:postgresql://localhost/commander?user=commander&password=commander"
+                             :env          {#_:index-type       #_"dynamodb"
+                                            :index-table-name "commander-dev-index"
+                                            :database-uri     "jdbc:postgresql://localhost/commander?user=commander&password=commander"
+                                            #_:log-type         #_"kinesis"
+                                            :commands-topic   "commander-dev-commands"
+                                            :events-topic     "commander-dev-events"
                                             :kafka-servers    "localhost:9092"
                                             :indexer-group-id "commander-dev-indexer"
                                             :rest-group-id    "commander-dev-rest"}}
