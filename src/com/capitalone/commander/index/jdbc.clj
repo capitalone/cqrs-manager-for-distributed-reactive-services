@@ -65,12 +65,9 @@
 
   index/CommandDataAccess
   (-fetch-commands [index limit offset]
-    (let [commands-query (if (pos? limit)
-                           ["SELECT id, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = true ORDER BY timestamp ASC LIMIT ? OFFSET ?"
-                            limit
-                            offset]
-                           ["SELECT id, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = true ORDER BY timestamp ASC OFFSET ?"
-                            offset])]
+    (let [commands-query ["SELECT id, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = true ORDER BY timestamp ASC LIMIT ? OFFSET ?"
+                          limit
+                          (or offset 0)]]
       (j/with-db-transaction [tx index {:read-only? true}]
         {:commands (map command-from-select (j/query index commands-query))
          :offset   offset
@@ -91,12 +88,9 @@
 
   index/EventDataAccess
   (-fetch-events [index limit offset]
-    (let [events-query (if (pos? limit)
-                         ["SELECT id, parent, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = false ORDER BY timestamp ASC LIMIT ? OFFSET ?"
-                          limit
-                          offset]
-                         ["SELECT id, parent, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = false ORDER BY timestamp ASC OFFSET ?"
-                          offset])]
+    (let [events-query ["SELECT id, parent, action, data, timestamp, topic, partition, \"offset\" FROM commander WHERE command = false ORDER BY timestamp ASC LIMIT ? OFFSET ?"
+                        limit
+                        (or offset 0)]]
       (j/with-db-transaction [tx index {:read-only? true}]
         {:events (map event-from-select (j/query index events-query))
          :offset offset
