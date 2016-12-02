@@ -99,9 +99,7 @@
 (s/fdef insert-commands!
         :args (s/cat :index ::CommandDataAccess
                      :command (s/or :single ::commander/command
-                                    :collection (s/and sequential?
-                                                       (s/every ::commander/command
-                                                                :kind vector?))))
+                                    :collection (s/every ::commander/command)))
         :ret boolean?)
 
 (defprotocol EventDataAccess
