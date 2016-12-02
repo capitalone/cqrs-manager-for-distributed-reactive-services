@@ -168,7 +168,8 @@
         (finally
           (log/info ::consume-onto-channel! "Cleaning up Kafka consumer and closing.")
           (.close consumer)
-          :done)))))
+          :done)))
+    ch))
 
 (defmethod l/construct-consumer :kafka
   [consumer-config]
