@@ -234,12 +234,13 @@
 ;; TODO: spec for consumer-config, assert values conform prior to constructing ConsumerComponent
 (defmethod l/construct-consumer :kinesis
   [{:keys [client-id group-id]
-    :or   {client-id (some-> (InetAddress/getLocalHost)
-                             .getCanonicalHostName
-                             (str ":" (UUID/randomUUID)))}
     :as consumer-config}]
   (log/info ::l/construct-consumer :kinesis
             :config consumer-config)
   (assert group-id)
-  (map->ConsumerComponent {:client-id        client-id
+  (map->ConsumerComponent {:client-id        (str client-id
+                                                  ":"
+                                                  (.getCanonicalHostName (InetAddress/getLocalHost))
+                                                  ":"
+                                                  (UUID/randomUUID))
                            :application-name group-id}))
