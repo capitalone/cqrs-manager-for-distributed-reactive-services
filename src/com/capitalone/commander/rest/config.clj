@@ -38,7 +38,8 @@
    :log-consumer {:type     (some-> env :log-type keyword)
                   :servers  (:kafka-servers env)
                   :group-id (:rest-group-id env)}
-   :index        {:type    (some-> env :index-type keyword)
-                  :connection-uri (:database-uri env)}
+   :index        {:type           (some-> env :index-type keyword)
+                  :connection-uri (:database-uri env)
+                  :table-name     (:index-table-name env)}
    :log-producer {:type    (some-> env :log-type keyword)
                   :servers (:kafka-servers env)}})
