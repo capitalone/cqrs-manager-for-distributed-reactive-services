@@ -41,7 +41,7 @@
                               "id" (-> v .getS UUID/fromString)
                               "action" (-> v .getS keyword)
                               "data" (-> v .getB fressian/read)
-                              "timestamp" (.getN v)
+                              "timestamp" (some-> v .getN Long/parseLong)
                               "topic" (.getS v)
                               "partition" (.getS v)
                               "offset" (.getS v)
@@ -52,12 +52,15 @@
 
 (defn command-from-select
   [command-map]
-  (-> command-map
-      event-from-select
-      (update-in [:children]
-                 #(map (fn [^AttributeValue child]
-                         (-> child .getS UUID/fromString))
-                       (.getL ^AttributeValue %)))))
+  (cond-> command-map
+          true
+          event-from-select
+
+          (:children command-map)
+          (update-in [:children]
+                     #(map (fn [^AttributeValue child]
+                             (-> child .getS UUID/fromString))
+                           (.getL ^AttributeValue %)))))
 
 (defn- event-for-insert
   [event]
