@@ -59,13 +59,15 @@
             schema (action->schema action)]
         (s/check schema data))))
 
+(s/defschema Offset (s/maybe (s/either s/Int s/Str)))
+
 (s/defschema Command
   (assoc CommandParams
          :id s/Uuid
          :timestamp s/Int
          :topic s/Str
          :partition (s/either s/Int s/Str)
-         :offset (s/either s/Int s/Str)
+         :offset Offset
 
          (s/optional-key :children) [s/Uuid]))
 
@@ -82,10 +84,10 @@
   {:summary    "Get all commands"
    :parameters {:query-params {(s/optional-key :sync)   s/Bool
                                (s/optional-key :limit)  s/Int
-                               (s/optional-key :offset) s/Int}}
+                               (s/optional-key :offset) Offset}}
    :responses  {200 {:body {:commands [Command]
                             :limit    s/Int
-                            :offset   s/Int
+                            :offset   Offset
                             :total    s/Int}}}}
   [{:keys [component] :as request}]
   (let [limit           (get-in request [:query-params :limit])
@@ -111,7 +113,7 @@
                                (s/optional-key :offset) s/Int}}
    :responses  {200 {:body {:events [Event]
                             :limit  s/Int
-                            :offset s/Int
+                            :offset Offset
                             :total  s/Int}}}}
   [{:keys [component] :as request}]
   (let [limit         (get-in request [:query-params :limit])
