@@ -32,7 +32,7 @@
     Returns the newly created command, with a :children key whose
     value is a vector containing the completion event id if
     successful.  If ")
-  (-list-commands [this offset limit]
+  (-list-commands [this limit offset]
     "Returns a map of :commands, :limit, :offset, and :total,
     where :commands is `limit` indexed commands, starting at `offset`.
     If limit is 0, returns all indexed commands starting with
@@ -49,7 +49,7 @@
     "Returns true if valid, map of errors otherwise"))
 
 (defprotocol EventService
-  (-list-events [this offset limit]
+  (-list-events [this limit offset]
     "Returns a map of :events, :limit, :offset, and :total,
     where :events is `limit` indexed events, starting at `offset`.
     If limit is 0, returns all indexed events starting with
@@ -87,22 +87,22 @@
 
 (defn list-commands
   "Returns a map of :commands, :limit, :offset, and :total,
-   where :commands is `limit` indexed commands, starting at `offset`.
-   If limit is 0, returns all indexed commands starting with
-   offset. :total is the total count of all commands."
-  ([api] (list-commands api 0))
-  ([api offset] (list-commands api offset 0))
-  ([api offset limit]
-   (log/info ::list-commands [api offset limit])
-   (-list-commands api (or offset 0) (or limit 0))))
+  where :commands is `limit` (defaults to 100) indexed commands,
+  starting at `offset`, and
+  :total is the total count of all commands."
+  ([api] (list-commands api nil))
+  ([api limit] (list-commands api limit nil))
+  ([api limit offset]
+   (log/info ::list-commands [api limit offset])
+   (-list-commands api limit offset)))
 
 (s/def ::commands (s/every ::commander/command))
 (s/def ::total (s/int-in 0 Long/MAX_VALUE))
 
 (s/fdef list-commands
         :args (s/cat :api ::CommandService
-                     :offset (s/? (s/nilable (s/int-in 0 Long/MAX_VALUE)))
-                     :limit (s/? (s/nilable (s/int-in 0 Long/MAX_VALUE))))
+                     :limit (s/? (s/nilable ::index/limit))
+                     :offset (s/? (s/nilable ::index/offset)))
         :ret (s/keys :req-un [::commands ::commander/limit ::commander/offset ::total])
         :fn #(let [limit (-> % :args :limit)]
                (if (pos? limit)
@@ -162,17 +162,17 @@
    where :events is `limit` indexed events, starting at `offset`.
    If limit is 0, returns all indexed events starting with
    offset. :total is the total count of all events."
-  ([api] (list-events api 0))
-  ([api offset] (list-events api offset 0))
-  ([api offset limit]
-   (log/info ::list-events [api offset limit])
-   (-list-events api (or offset 0) (or limit 0))))
+  ([api] (list-events api nil))
+  ([api limit] (list-events api limit nil))
+  ([api limit offset]
+   (log/info ::list-events [api limit offset])
+   (-list-events api limit offset)))
 
 (s/def ::events (s/every ::commander/event))
 (s/fdef list-events
         :args (s/cat :api ::EventService
-                     :offset (s/? (s/nilable (s/int-in 0 Long/MAX_VALUE)))
-                     :limit (s/? (s/nilable (s/int-in 0 Long/MAX_VALUE))))
+                     :limit (s/? (s/nilable ::index/limit))
+                     :offset (s/? (s/nilable ::index/offset)))
         :ret (s/keys :req-un [::events ::commander/limit ::commander/offset ::total])
         :fn #(let [limit (-> % :args :limit)]
                (if (pos? limit)
@@ -275,11 +275,11 @@
         (finally
           (a/close! rch)
           (a/unsub events-pub id rch)))))
-  (-list-commands [_ offset limit]
-    (index/fetch-commands index offset limit))
-  (-get-command-by-id [this id]
+  (-list-commands [_ limit offset]
+    (index/fetch-commands index limit offset))
+  (-get-command-by-id [_ id]
     (index/fetch-command-by-id index id))
-  (-commands-ch [this ch]
+  (-commands-ch [_ ch]
     (let [int (a/chan 1 (map command-map))]
       (a/pipe int ch)
       (a/tap commands-mult int)
@@ -290,11 +290,11 @@
   (-validate-command-params [this command-params] true)
 
   EventService
-  (-list-events [this offset limit]
-    (index/fetch-events index offset limit))
-  (-get-event-by-id [this id]
+  (-list-events [_ limit offset]
+    (index/fetch-events index limit offset))
+  (-get-event-by-id [_ id]
     (index/fetch-event-by-id index id))
-  (-events-ch [this ch]
+  (-events-ch [_ ch]
     (let [int (a/chan 1 (map event-map))]
       (a/pipe int ch)
       (a/tap events-mult int)

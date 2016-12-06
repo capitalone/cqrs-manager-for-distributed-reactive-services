@@ -52,7 +52,7 @@
 
 (s/def ::offset (s/nilable (s/or :jdbc (s/int-in 0 Long/MAX_VALUE)
                                  :dynamodb string?)))
-(s/def ::limit (s/int-in 1 Long/MAX_VALUE))
+(s/def ::limit (s/int-in 1 Integer/MAX_VALUE))
 
 (defn fetch-commands
   "Fetches commands from the given index component, returning a map of
@@ -60,15 +60,13 @@
     - :limit the limit passed to the query
     - :offset the offset passed to the query
     - :total the total count of commands"
-  ([index]
-   (fetch-commands index 100 nil))
-  ([index limit offset]
-   (log/debug ::fetch-commands [index limit offset])
-   (-fetch-commands index limit offset)))
+  [index limit offset]
+  (log/debug ::fetch-commands [index limit offset])
+  (-fetch-commands index (or limit 100) offset))
 
 (s/fdef fetch-commands
         :args (s/cat :index  ::CommandDataAccess
-                     :limit  ::limit
+                     :limit  (s/nilable ::limit)
                      :offset ::offset)
         :ret (s/every ::commander/command)
         :fn #(let [limit (-> % :args :limit)]
@@ -125,15 +123,13 @@
     - :limit the limit passed to the query
     - :offset the offset passed to the query
     - :total the total count of events"
-  ([index]
-   (fetch-events index 100 nil))
-  ([index limit offset]
-   (log/debug ::fetch-events [index limit offset])
-   (-fetch-events index limit offset)))
+  [index limit offset]
+  (log/debug ::fetch-events [index limit offset])
+  (-fetch-events index (or limit 100) offset))
 
 (s/fdef fetch-events
         :args (s/cat :index ::EventDataAccess
-                     :limit  ::limit
+                     :limit (s/nilable ::limit)
                      :offset ::offset)
         :ret (s/every ::commander/event)
         :fn #(let [limit (-> % :args :limit)]
