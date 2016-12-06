@@ -46,7 +46,7 @@
   []
   (Thread/setDefaultUncaughtExceptionHandler nil))
 
-(defn keyword->string
+(defn ^String keyword->string
   [kw]
   (let [sb (StringBuffer.)]
     (when-let [ns (namespace kw)]

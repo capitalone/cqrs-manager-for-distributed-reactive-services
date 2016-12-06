@@ -54,6 +54,7 @@
 
                  ;; Kinesis
                  [com.amazonaws/aws-java-sdk-kinesis "1.11.60"]
+                 [com.amazonaws/aws-java-sdk-dynamodb "1.11.60"]
                  [com.amazonaws/amazon-kinesis-client "1.7.2"]
 
                  ;; Logging
