@@ -19,9 +19,11 @@
 (s/def ::id uuid?)
 (s/def ::timestamp (s/int-in 0 Long/MAX_VALUE))
 (s/def ::topic string?)
-(s/def ::partition (s/int-in 0 Integer/MAX_VALUE))
-(s/def ::offset (s/int-in 0 Long/MAX_VALUE))
-(s/def ::children uuid?)
+(s/def ::partition (s/or :kafka   (s/int-in 0 Integer/MAX_VALUE)
+                         :kinesis string?))
+(s/def ::offset (s/or :kafka   (s/int-in 0 Long/MAX_VALUE)
+                      :kinesis string?))
+(s/def ::children (s/every uuid?))
 
 ;; TODO: event type/schema registry
 (s/def ::command-params

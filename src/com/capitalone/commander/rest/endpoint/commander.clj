@@ -59,13 +59,15 @@
             schema (action->schema action)]
         (s/check schema data))))
 
+(s/defschema Offset (s/maybe (s/either s/Int s/Str)))
+
 (s/defschema Command
   (assoc CommandParams
          :id s/Uuid
          :timestamp s/Int
          :topic s/Str
-         :partition s/Int
-         :offset s/Int
+         :partition (s/either s/Int s/Str)
+         :offset Offset
 
          (s/optional-key :children) [s/Uuid]))
 
@@ -82,17 +84,17 @@
   {:summary    "Get all commands"
    :parameters {:query-params {(s/optional-key :sync)   s/Bool
                                (s/optional-key :limit)  s/Int
-                               (s/optional-key :offset) s/Int}}
+                               (s/optional-key :offset) Offset}}
    :responses  {200 {:body {:commands [Command]
                             :limit    s/Int
-                            :offset   s/Int
+                            :offset   Offset
                             :total    s/Int}}}}
   [{:keys [component] :as request}]
   (let [limit           (get-in request [:query-params :limit])
         offset          (get-in request [:query-params :offset])
         commands-result (-> component
                             :api
-                            (api/list-commands offset limit)
+                            (api/list-commands limit offset)
                             (update-in [:commands] #(mapv display-command %)))
         sync            (get-in request [:query-params :sync])
 
@@ -111,14 +113,14 @@
                                (s/optional-key :offset) s/Int}}
    :responses  {200 {:body {:events [Event]
                             :limit  s/Int
-                            :offset s/Int
+                            :offset Offset
                             :total  s/Int}}}}
   [{:keys [component] :as request}]
   (let [limit         (get-in request [:query-params :limit])
         offset        (get-in request [:query-params :offset])
         events-result (-> component
                           :api
-                          (api/list-events offset limit)
+                          (api/list-events limit offset)
                           (update-in [:events] #(mapv display-command %)))
         sync          (get-in request [:query-params :sync])
 

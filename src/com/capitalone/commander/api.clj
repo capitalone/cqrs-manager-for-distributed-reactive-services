@@ -18,9 +18,8 @@
             [io.pedestal.log :as log]
             [clj-uuid :as uuid]
             [com.capitalone.commander :as commander]
-            [com.capitalone.commander.database :as d]
-            [com.capitalone.commander.kafka :as k])
-  (:import [org.apache.kafka.clients.consumer Consumer]))
+            [com.capitalone.commander.index :as index]
+            [com.capitalone.commander.log :as l]))
 
 (set! *warn-on-reflection* true)
 
@@ -33,7 +32,7 @@
     Returns the newly created command, with a :children key whose
     value is a vector containing the completion event id if
     successful.  If ")
-  (-list-commands [this offset limit]
+  (-list-commands [this limit offset]
     "Returns a map of :commands, :limit, :offset, and :total,
     where :commands is `limit` indexed commands, starting at `offset`.
     If limit is 0, returns all indexed commands starting with
@@ -50,7 +49,7 @@
     "Returns true if valid, map of errors otherwise"))
 
 (defprotocol EventService
-  (-list-events [this offset limit]
+  (-list-events [this limit offset]
     "Returns a map of :events, :limit, :offset, and :total,
     where :events is `limit` indexed events, starting at `offset`.
     If limit is 0, returns all indexed events starting with
@@ -88,22 +87,22 @@
 
 (defn list-commands
   "Returns a map of :commands, :limit, :offset, and :total,
-   where :commands is `limit` indexed commands, starting at `offset`.
-   If limit is 0, returns all indexed commands starting with
-   offset. :total is the total count of all commands."
-  ([api] (list-commands api 0))
-  ([api offset] (list-commands api offset 0))
-  ([api offset limit]
-   (log/info ::list-commands [api offset limit])
-   (-list-commands api (or offset 0) (or limit 0))))
+  where :commands is `limit` (defaults to 100) indexed commands,
+  starting at `offset`, and
+  :total is the total count of all commands."
+  ([api] (list-commands api nil))
+  ([api limit] (list-commands api limit nil))
+  ([api limit offset]
+   (log/info ::list-commands [api limit offset])
+   (-list-commands api limit offset)))
 
 (s/def ::commands (s/every ::commander/command))
 (s/def ::total (s/int-in 0 Long/MAX_VALUE))
 
 (s/fdef list-commands
         :args (s/cat :api ::CommandService
-                     :offset (s/? (s/nilable (s/int-in 0 Long/MAX_VALUE)))
-                     :limit (s/? (s/nilable (s/int-in 0 Long/MAX_VALUE))))
+                     :limit (s/? (s/nilable ::index/limit))
+                     :offset (s/? (s/nilable ::index/offset)))
         :ret (s/keys :req-un [::commands ::commander/limit ::commander/offset ::total])
         :fn #(let [limit (-> % :args :limit)]
                (if (pos? limit)
@@ -163,17 +162,17 @@
    where :events is `limit` indexed events, starting at `offset`.
    If limit is 0, returns all indexed events starting with
    offset. :total is the total count of all events."
-  ([api] (list-events api 0))
-  ([api offset] (list-events api offset 0))
-  ([api offset limit]
-   (log/info ::list-events [api offset limit])
-   (-list-events api (or offset 0) (or limit 0))))
+  ([api] (list-events api nil))
+  ([api limit] (list-events api limit nil))
+  ([api limit offset]
+   (log/info ::list-events [api limit offset])
+   (-list-events api limit offset)))
 
 (s/def ::events (s/every ::commander/event))
 (s/fdef list-events
         :args (s/cat :api ::EventService
-                     :offset (s/? (s/nilable (s/int-in 0 Long/MAX_VALUE)))
-                     :limit (s/? (s/nilable (s/int-in 0 Long/MAX_VALUE))))
+                     :limit (s/? (s/nilable ::index/limit))
+                     :offset (s/? (s/nilable ::index/offset)))
         :ret (s/keys :req-un [::events ::commander/limit ::commander/offset ::total])
         :fn #(let [limit (-> % :args :limit)]
                (if (pos? limit)
@@ -223,20 +222,20 @@
    :value command})
 
 (defn- send-command-and-await-result!
-  [kafka-producer command-topic id command]
+  [log-producer command-topic id command]
   (let [record (command-record command-topic id command)
-        ch (k/send! kafka-producer record)]
+        ch (l/send! log-producer record)]
     (if-some [ret (a/<!! ch)]
       (if (instance? Exception ret)
-        (throw (ex-info "Error writing to Kafka" {:record record} ret))
+        (throw (ex-info "Error writing to log" {:record record} ret))
         ret)
-      (throw (ex-info "Error writing to Kafka: send response channel closed" {:record record})))))
+      (throw (ex-info "Error writing to log: send response channel closed" {:record record})))))
 
-(defrecord Commander [database
-                      kafka-producer
+(defrecord Commander [index
+                      log-producer
                       commands-topic
                       events-topic
-                      kafka-consumer
+                      log-consumer
                       ch
                       pub
                       commands-ch
@@ -248,7 +247,7 @@
   CommandService
   (-create-command [this command-params]
     (let [id     (uuid/v1)
-          result (send-command-and-await-result! kafka-producer commands-topic id command-params)]
+          result (send-command-and-await-result! log-producer commands-topic id command-params)]
       (assoc command-params
              :id        id
              :timestamp (:timestamp result)
@@ -259,7 +258,7 @@
     (let [id     (uuid/v1)
           rch    (a/promise-chan)
           _      (a/sub events-pub id rch)
-          result (send-command-and-await-result! kafka-producer commands-topic id command-params)
+          result (send-command-and-await-result! log-producer commands-topic id command-params)
           base   (assoc command-params
                         :id        id
                         :timestamp (:timestamp result)
@@ -276,11 +275,11 @@
         (finally
           (a/close! rch)
           (a/unsub events-pub id rch)))))
-  (-list-commands [_ offset limit]
-    (d/fetch-commands database offset limit))
-  (-get-command-by-id [this id]
-    (d/fetch-command-by-id database id))
-  (-commands-ch [this ch]
+  (-list-commands [_ limit offset]
+    (index/fetch-commands index limit offset))
+  (-get-command-by-id [_ id]
+    (index/fetch-command-by-id index id))
+  (-commands-ch [_ ch]
     (let [int (a/chan 1 (map command-map))]
       (a/pipe int ch)
       (a/tap commands-mult int)
@@ -291,11 +290,11 @@
   (-validate-command-params [this command-params] true)
 
   EventService
-  (-list-events [this offset limit]
-    (d/fetch-events database offset limit))
-  (-get-event-by-id [this id]
-    (d/fetch-event-by-id database id))
-  (-events-ch [this ch]
+  (-list-events [_ limit offset]
+    (index/fetch-events index limit offset))
+  (-get-event-by-id [_ id]
+    (index/fetch-event-by-id index id))
+  (-events-ch [_ ch]
     (let [int (a/chan 1 (map event-map))]
       (a/pipe int ch)
       (a/tap events-mult int)
@@ -303,8 +302,7 @@
 
   c/Lifecycle
   (start [this]
-    (let [^Consumer consumer (:consumer kafka-consumer)
-          ch             (a/chan 1)
+    (let [ch             (a/chan 1)
           pub            (a/pub ch :topic)
 
           events-ch      (a/chan 1)
@@ -315,13 +313,11 @@
 
           commands-ch    (a/chan 1)
           commands-mult  (a/mult commands-ch)]
-      (.subscribe consumer [commands-topic events-topic])
-
       (a/sub pub commands-topic commands-ch)
       (a/sub pub events-topic events-ch)
       (a/tap events-mult events-ch-copy)
 
-      (k/kafka-consumer-onto-ch! kafka-consumer ch)
+      (l/consume-onto-channel! log-consumer [commands-topic events-topic] ch)
 
       (assoc this
              :ch            ch

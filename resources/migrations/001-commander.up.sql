@@ -20,3 +20,5 @@ ALTER TABLE IF EXISTS commander
   ADD COLUMN topic     varchar(255) NOT NULL,
   ADD COLUMN partition smallint CHECK (partition >= 0),
   ADD COLUMN "offset"  bigint CHECK ("offset" >= 0);
+  -- ADD COLUMN partition varchar(255) NOT NULL,
+  -- ADD COLUMN "offset"  varchar(255) NOT NULL;

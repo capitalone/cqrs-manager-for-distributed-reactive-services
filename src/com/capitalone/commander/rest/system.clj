@@ -19,8 +19,12 @@
             [com.capitalone.commander.rest.component.routes :refer [construct-routes]]
             [com.capitalone.commander.rest.component.pedestal :refer [construct-pedestal-server]]
             [com.capitalone.commander.grpc :refer [construct-grpc-server]]
-            [com.capitalone.commander.database :refer [construct-jdbc-db]]
-            [com.capitalone.commander.kafka :refer [construct-producer construct-consumer]]
+            [com.capitalone.commander.index :refer [construct-index]]
+            com.capitalone.commander.index.jdbc
+            com.capitalone.commander.index.dynamodb
+            [com.capitalone.commander.log :refer [construct-producer construct-consumer]]
+            com.capitalone.commander.log.kafka
+            com.capitalone.commander.log.kinesis
             [com.capitalone.commander.api :refer [construct-commander-api]]))
 
 (set! *warn-on-reflection* true)
@@ -38,13 +42,13 @@
          :grpc-server    (construct-grpc-server (:grpc config))
          :http           (construct-pedestal-server (:http config))
          :routes         (construct-routes)
-         :database       (construct-jdbc-db  (:database config))
-         :kafka-consumer (construct-consumer (:kafka-consumer config))
-         :kafka-producer (construct-producer (:kafka-producer config))
+         :index          (construct-index  (:index config))
+         :log-consumer   (construct-consumer (:log-consumer config))
+         :log-producer   (construct-producer (:log-producer config))
          :api            (construct-commander-api (:api config)))
         (component/system-using
          {:http           [:routes]
           :routes         [:rest-endpoints]
           :rest-endpoints [:api]
           :grpc-server    [:api]
-          :api            [:kafka-producer :kafka-consumer :database]}))))
+          :api            [:log-producer :log-consumer :index]}))))

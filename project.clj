@@ -52,6 +52,11 @@
                  ;; Kafka
                  [org.apache.kafka/kafka-clients "0.10.0.1"]
 
+                 ;; Kinesis
+                 [com.amazonaws/aws-java-sdk-kinesis "1.11.60"]
+                 [com.amazonaws/aws-java-sdk-dynamodb "1.11.60"]
+                 [com.amazonaws/amazon-kinesis-client "1.7.2"]
+
                  ;; Logging
                  [ch.qos.logback/logback-classic "1.1.7"
                   :exclusions [org.slf4j/slf4j-api]]
@@ -63,7 +68,7 @@
   :javac-options     ["-target" "1.8" "-source" "1.8"]
   :profiles {:debug         {:debug      true
                              :injections [(prn (into {} (System/getProperties)))]}
-             :dev           [:project/dev  :profiles/dev]
+             :dev           [:project/dev :profiles/dev]
              :test          [:project/test :profiles/test]
              :uberjar       {:target-path  "target/%s/"
                              :aot          :all
@@ -73,18 +78,23 @@
                              :repl-options {:init-ns user}}
              :profiles/dev  {}
              :profiles/test {}
-             :project/dev   {:dependencies      [[reloaded.repl "0.2.2"]
-                                                 [org.clojure/tools.namespace "0.2.11"]
-                                                 [org.clojure/tools.nrepl "0.2.12"]
-                                                 [eftest "0.1.1"]
-                                                 [org.clojure/test.check "0.9.0"]]
-                             :plugins           [[lein-environ "1.0.2"]
-                                                 [lein-auto "0.1.2"]]
-                             :env               {:database-uri     "jdbc:postgresql://localhost/commander?user=commander&password=commander"
-                                                 :kafka-servers    "localhost:9092"
-                                                 :indexer-group-id "dev-indexer"
-                                                 :rest-group-id    "dev-rest"}}
+             :project/dev   {:dependencies [[reloaded.repl "0.2.2"]
+                                            [org.clojure/tools.namespace "0.2.11"]
+                                            [org.clojure/tools.nrepl "0.2.12"]
+                                            [eftest "0.1.1"]
+                                            [org.clojure/test.check "0.9.0"]]
+                             :plugins      [[lein-environ "1.0.2"]
+                                            [lein-auto "0.1.2"]]
+                             :env          {#_:index-type       #_"dynamodb"
+                                            :index-table-name "commander-dev-index"
+                                            :database-uri     "jdbc:postgresql://localhost/commander?user=commander&password=commander"
+                                            #_:log-type         #_"kinesis"
+                                            :commands-topic   "commander-dev-commands"
+                                            :events-topic     "commander-dev-events"
+                                            :kafka-servers    "localhost:9092"
+                                            :indexer-group-id "commander-dev-indexer"
+                                            :rest-group-id    "commander-dev-rest"}}
              :project/test  {:env {:database-uri     "jdbc:postgresql://localhost/commander?user=commander&password=commander"
                                    :kafka-servers    "localhost:9092"
-                                   :indexer-group-id "dev-indexer"
-                                   :rest-group-id    "dev-rest"}}})
+                                   :indexer-group-id "commander-dev-indexer"
+                                   :rest-group-id    "commander-dev-rest"}}})

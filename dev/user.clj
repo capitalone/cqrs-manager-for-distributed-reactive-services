@@ -22,17 +22,17 @@
             [meta-merge.core :refer [meta-merge]]
             [reloaded.repl :refer [system init start stop go reset]]
             [io.pedestal.log :as log]
-            [com.capitalone.clojure.runtime :as runtime]
+            [com.capitalone.commander.util :as util]
             [com.capitalone.commander.rest.config :as rest-config]
             [com.capitalone.commander.rest.system :as rest-system]
             [com.capitalone.commander.indexer.config :as indexer-config]
             [com.capitalone.commander.indexer.system :as indexer-system]
-            [com.capitalone.commander.database :as database]
+            [com.capitalone.commander.index.jdbc :as jdbc]
             [com.capitalone.commander.api :as api]))
 
 (stest/instrument)
 
-(runtime/set-default-uncaught-exception-handler!
+(util/set-default-uncaught-exception-handler!
  (fn [thread ex] (log/error ::default-uncaught-exception-handler thread
                             :exception ex)))
 
@@ -53,8 +53,8 @@
   (component/system-using
    (merge (rest-system/new-system rest-config)
           (indexer-system/new-system indexer-config))
-   {:indexer [:database]
-    :api     [:database]}))
+   {:indexer [:index]
+    :api     [:index]}))
 
 (ns-unmap *ns* 'test)
 
@@ -66,17 +66,17 @@
 
 (defn migrate-database
   []
-  (database/migrate-database! (:database rest-config)))
+  (jdbc/migrate-database! (:index rest-config)))
 
 (defn rollback-database
   []
-  (database/rollback-database! (:database rest-config)))
+  (jdbc/rollback-database! (:index rest-config)))
 
 (defn ensure-database
   []
-  (database/-main "jdbc:postgresql://localhost/postgres?user=postgres&password=postgres"
-                  "commander"
-                  "commander"
-                  "commander"))
+  (jdbc/-main "jdbc:postgresql://localhost/postgres?user=postgres&password=postgres"
+              "commander"
+              "commander"
+              "commander"))
 
 (reloaded.repl/set-init! new-system)

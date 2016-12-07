@@ -17,13 +17,18 @@
 (set! *warn-on-reflection* true)
 
 (def defaults
-  {:indexer        {:commands-topic "commands"
-                    :events-topic   "events"}
-   :kafka-consumer {:client-id "commander-indexer-consumer"}})
+  {:indexer      {:commands-topic "commands"
+                  :events-topic   "events"}
+   :index        {:type :jdbc}
+   :log-consumer {:type      :kafka
+                  :client-id "commander-indexer-consumer"}})
 
 (def environ
-  {:indexer        {:commands-topic (:commands-topic env)
-                    :events-topic   (:events-topic env)}
-   :kafka-consumer {:servers  (:kafka-servers env)
-                    :group-id (:indexer-group-id env)}
-   :database       {:connection-uri (:database-uri env)}})
+  {:indexer      {:commands-topic (:commands-topic env)
+                  :events-topic   (:events-topic env)}
+   :log-consumer {:type     (some-> env :log-type keyword)
+                  :servers  (:kafka-servers env)
+                  :group-id (:indexer-group-id env)}
+   :index        {:type           (some-> env :index-type keyword)
+                  :connection-uri (:database-uri env)
+                  :table-name     (:index-table-name env)}})
