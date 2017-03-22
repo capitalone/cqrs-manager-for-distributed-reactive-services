@@ -82,7 +82,7 @@ Or you can run an entire example system (including both CMDR
 services and an example business logic service) via docker-compose:
 
 ``` sh
-$ docker-compose -f docker-compose-example.yml up --build
+$ docker-compose -f docker-compose.yml -f docker-compose-example.yml up
 ```
 
 #### Running Locally
