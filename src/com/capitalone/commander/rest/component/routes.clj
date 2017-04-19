@@ -21,7 +21,7 @@
             [schema.core :as s]
             [io.pedestal.log :as log]
             [io.pedestal.http.route :as route]
-            [io.pedestal.interceptor.helpers :refer [defhandler]]
+            [io.pedestal.interceptor.helpers :refer [handler]]
             [route-swagger.doc :as doc]
             [pedestal-api.core :as api]))
 
@@ -38,9 +38,11 @@
            :externalDocs {:description "See the Commander source code"
                           :url         "https://github.kdc.capitalone.com/commander/commander"}}]})
 
-(defhandler health-check
-  [request]
-  {:status 200 :body "healthy"})
+(def health-check
+  (handler
+   ::health-check
+   (fn [request]
+     {:status 200 :body "healthy"})))
 
 (defn build-routes
   [rest-endpoints doc]
