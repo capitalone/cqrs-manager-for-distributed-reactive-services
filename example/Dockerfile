@@ -1,4 +1,4 @@
-# Copyright 2016 Capital One Services, LLC
+# Copyright 2017 Capital One Services, LLC
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,16 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 
-FROM clojure:alpine
+FROM anapsix/alpine-java:8_server-jre_unlimited
 MAINTAINER Bobby Calderwood <bobby.calderwood@capitalone.com>
 
-RUN mkdir -p /usr/src/app
-WORKDIR /usr/src/app
+RUN mkdir -p /opt/app
+WORKDIR /opt/app
 
-COPY project.clj  /usr/src/app/
-RUN lein with-profile runtime deps
-COPY . /usr/src/app/
-RUN lein with-profile runtime compile
+COPY target/*.jar /opt/app/app.jar
 
-ENTRYPOINT ["/usr/src/app/bin/run"]
-EXPOSE 3000
+ENTRYPOINT ["java"]
+CMD ["-jar", "/opt/app/app.jar"]
+EXPOSE 8080
