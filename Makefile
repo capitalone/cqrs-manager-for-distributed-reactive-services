@@ -56,6 +56,6 @@ example-logs:
 service-logs:
 	docker-compose --project-name=commander logs -t -f
 
-.PHONY: db
-db:
+.PHONY: psql
+psql:
 	docker run --network commander --rm -it --entrypoint psql postgres:9.5.3 -h postgres -U commander -d commander
