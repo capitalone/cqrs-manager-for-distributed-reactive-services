@@ -26,7 +26,7 @@ build: example/target/commander-kafka-streams-example-*.jar
 
 .PHONY: network
 network:
-	docker network inspect commander || docker network create commander
+	-docker network create commander
 
 .PHONY: example
 example: service-bootstrap
