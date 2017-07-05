@@ -70,6 +70,8 @@
                              :injections [(prn (into {} (System/getProperties)))]}
              :dev           [:project/dev  :profiles/dev]
              :test          [:project/test :profiles/test]
+             :runtime       {:aot          :all
+                             :omit-source  true}
              :uberjar       {:target-path  "target/%s/"
                              :aot          :all
                              :omit-source  true

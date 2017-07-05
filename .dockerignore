@@ -1,0 +1,7 @@
+**
+
+!project.clj
+!src/
+!resources/
+!generated/
+!bin/

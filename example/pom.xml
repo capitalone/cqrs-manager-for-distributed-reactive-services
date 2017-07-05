@@ -22,7 +22,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.capitalone.commander.example</groupId>
-  <artifactId>kafka-streams</artifactId>
+  <artifactId>commander-kafka-streams-example</artifactId>
   <version>0.1.0</version>
 
   <parent>
@@ -50,7 +50,7 @@
     <dependency>
       <groupId>org.apache.kafka</groupId>
       <artifactId>kafka-streams</artifactId>
-      <version>0.10.0.1</version>
+      <version>0.10.2.0</version>
       <exclusions>
         <exclusion>
           <groupId>org.slf4j</groupId>

@@ -20,6 +20,7 @@ WORKDIR /usr/src/app
 COPY project.clj  /usr/src/app/
 RUN lein with-profile runtime deps
 COPY . /usr/src/app/
+RUN lein with-profile runtime compile
 
 ENTRYPOINT ["/usr/src/app/bin/run"]
 EXPOSE 3000

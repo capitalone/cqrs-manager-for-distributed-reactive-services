@@ -25,7 +25,7 @@
             [cheshire.core :as json]
             [io.pedestal.log :as log]
             [io.pedestal.interceptor :refer [interceptor]]
-            [io.pedestal.interceptor.helpers :refer [defbefore]]
+            [io.pedestal.interceptor.helpers :refer [before]]
             [io.pedestal.http.route :refer [url-for]]
             #_[io.pedestal.http.jetty.websockets :as ws]
             [io.pedestal.http.sse :as sse]
@@ -134,18 +134,20 @@
                (h/events-hiccup events-result sync)
                events-result)}))
 
-(defbefore ensure-processable
-  [{:keys [request] :as context}]
-  (log/debug ::ensure-processable (:body-params request))
-  (if (= :post (:request-method request))
-    (if-let [errors (-> request
-                        :body-params
-                        validate-body-params)]
-      (assoc context :response {:status  422
-                                :headers {}
-                                :body    errors})
-      context)
-    context))
+(def ensure-processable
+  (before
+   ::ensure-processable
+   (fn [{:keys [request] :as context}]
+     (log/debug ::ensure-processable (:body-params request))
+     (if (= :post (:request-method request))
+       (if-let [errors (-> request
+                           :body-params
+                           validate-body-params)]
+         (assoc context :response {:status  422
+                                   :headers {}
+                                   :body    errors})
+         context)
+       context))))
 
 ;;; TODO: authorization
 (defhandler create-command

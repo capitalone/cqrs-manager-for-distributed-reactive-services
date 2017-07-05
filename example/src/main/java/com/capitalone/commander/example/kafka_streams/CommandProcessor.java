@@ -55,7 +55,6 @@ public class CommandProcessor implements InitializingBean, DisposableBean {
     @Bean
     public StreamsConfig kafkaStreamsConfig(@Value("${application.id}") String applicationIdConfig,
                                             @Value("${bootstrap.servers}") String bootstrapServersConfig,
-                                            @Value("${zookeeper.connect}") String zookeeperConnectConfig,
                                             @Value("${commands.topic}") String commandsTopic,
                                             @Value("${events.topic}") String eventsTopic,
                                             @Value("${customers.topic}") String customersTopic) {
@@ -65,7 +64,6 @@ public class CommandProcessor implements InitializingBean, DisposableBean {
         Map<String, Object> props = new HashMap<>();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, applicationIdConfig);
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServersConfig);
-        props.put(StreamsConfig.ZOOKEEPER_CONNECT_CONFIG, zookeeperConnectConfig);
         return new StreamsConfig(props);
     }
 

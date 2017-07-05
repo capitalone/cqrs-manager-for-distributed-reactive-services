@@ -60,18 +60,24 @@ database.
 
 ### Supporting Services
 
-Running the supporting services (Kafka, ZooKeeper, PostgreSQL) via
-`docker-compose` is the easiest way to get started.  However, if you
-want to run the supporting services locally/manually, you can use a
-package manager to install the services.
+There is a handy `Makefile` for running and interacting with the
+supporting services and/or the example application.  This `Makefile`
+uses `docker` and `docker-compose` under the hood to orchestrate the
+various services.
 
-#### Docker compose
+Running the supporting services (Kafka, ZooKeeper, PostgreSQL) via the
+`Makefile` is the easiest way to get started.  However, if you want to
+run the supporting services manually, you can use a package manager to
+install the services.
+
+#### Makefile
 
 The easiest way to get CMDR's supporting services up-and-running
-quickly in development is via `docker-compose`.
+quickly in development is via the `Makefile`.
 
 ``` sh
-$ docker-compose up
+$ make services
+$ make service-bootstrap # bootstraps database, etc.
 ```
 
 Then run the CMDR services locally from the REPL or via `lein
@@ -79,13 +85,16 @@ run` as described below, and visit http://localhost:3000/ui/ to see
 the Swagger/OpenAPI user interface to the CMDR service.
 
 Or you can run an entire example system (including both CMDR
-services and an example business logic service) via docker-compose:
+services and an example business logic service):
 
 ``` sh
-$ docker-compose -f docker-compose-example.yml up --build
+$ make example
 ```
 
-#### Running Locally
+Then you can visit the CMDR service at http://localhost:3000/ui/, and
+the sample application's REST API at http://localhost:8080/customers.
+
+#### Running Manually
 
 The following instructions provide an example for those running on Mac
 OS X using the [Homebrew](http://brew.sh/) package manager to install
