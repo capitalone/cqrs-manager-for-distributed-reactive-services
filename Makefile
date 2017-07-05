@@ -38,7 +38,7 @@ services: network
 
 .PHONY: service-bootstrap
 service-bootstrap: build services
-	docker run --network commander --rm -it commander_rest com.capitalone.commander.database 'jdbc:postgresql://postgres/postgres?user=postgres&password=postgres' commander commander commander
+	-docker run --network commander --rm -it commander_rest com.capitalone.commander.database 'jdbc:postgresql://postgres/postgres?user=postgres&password=postgres' commander commander commander
 
 .PHONY: stop
 stop:
