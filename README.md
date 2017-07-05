@@ -160,6 +160,10 @@ the dev environment to work.
 In the third shell:
 
 ``` sh
+# build Protobufs classes (only necessary on first run, or when making changes to .proto files)
+$ lein do javac, compile
+
+# launch repl
 $ lein repl
 ```
 
