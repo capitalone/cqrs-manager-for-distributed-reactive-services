@@ -1,3 +1,5 @@
+# ** Capital One built this project to help our engineers as well as users in the community. We are no longer able to fully support the project. We have archived the project as of Jul 9 2019 where it will be available in a read-only state. Feel free to fork the project and maintain your own version. **
+
 # CQRS Manager for Distributed Reactive Services
 
 CQRS Manager for Distributed Reactive Services (herein abbreviated
